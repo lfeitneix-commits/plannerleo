@@ -538,19 +538,8 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 .sub-section{margin-bottom:22px;}
 .sub-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .sub-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);}
-.link-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface-2);border-radius:10px;margin-bottom:6px;font-size:13px;}
-.link-row a{color:var(--accent);text-decoration:none;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.link-row .ic svg{width:14px;height:14px;color:var(--text-muted);}
-.comment-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft);}
-.comment-body{flex:1;}
-.comment-head{display:flex;align-items:center;gap:8px;margin-bottom:3px;}
-.comment-author{font-size:12.5px;font-weight:700;}
-.comment-time{font-size:11px;color:var(--text-faint);}
-.comment-text{font-size:13px;}
 .history-item{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12.5px;color:var(--text-muted);}
 .history-item .ic svg{width:13px;height:13px;color:var(--text-faint);}
-.comment-input-row{display:flex;gap:8px;margin-top:10px;}
-.comment-input-row input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-size:13px;outline:none;}
 
 /* files */
 .files-list{display:flex;flex-direction:column;gap:6px;}
@@ -702,6 +691,7 @@ function isSameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth(
 function fmtDateShort(iso){ if(!iso) return ''; const d = fromISO(iso); return `${d.getDate()} ${MONTH_NAMES[d.getMonth()].slice(0,3).toLowerCase()}`; }
 function fmtDateLong(iso){ if(!iso) return ''; const d = fromISO(iso); return `${DAY_NAMES[(d.getDay()+6)%7]} ${d.getDate()} de ${MONTH_NAMES[d.getMonth()].toLowerCase()}`; }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function stripHtml(html){ return (html||'').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); }
 function descBullets(desc){
   const lines = (desc||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   if(!lines.length) return '';
@@ -849,7 +839,7 @@ function renderSidebar(){
   const c = navCounts();
   const items = [
     { id:'dashboard', label:'Inicio', icon:'dashboard' },
-    { id:'planner', label:'Planner', icon:'planner' },
+    { id:'planner', label:'Reunión', icon:'planner' },
     { id:'tasks', label:'Tareas', icon:'tasks', count:c.pendingTasks },
     { id:'topics', label:'Proyectos', icon:'topics', count:c.topicsCount },
   ];
@@ -904,7 +894,7 @@ function globalSearchResults(q){
 
 function renderTopbar(){
   const results = globalSearchResults(searchQuery);
-  const titleMap = { dashboard:'Inicio', planner:'Planner semanal', tasks:'Tareas', topics:'Proyectos', settings:'Configuración' };
+  const titleMap = { dashboard:'Inicio', planner:'Reunión', tasks:'Tareas', topics:'Proyectos', settings:'Configuración' };
   return `
   <div class="topbar">
     <div class="search-wrap">
@@ -1065,7 +1055,7 @@ function renderPlanner(){
   return `
   <div class="view-header">
     <div>
-      <div class="view-title">Planner semanal</div>
+      <div class="view-title">Reunión</div>
       <div class="view-sub">${wk.getDate()} ${MONTH_NAMES[wk.getMonth()].toLowerCase()} — ${weekEnd.getDate()} ${MONTH_NAMES[weekEnd.getMonth()].toLowerCase()}</div>
     </div>
     <div class="planner-toolbar">
@@ -1202,21 +1192,24 @@ function renderTopics(){
   <div class="view-header">
     <div>
       <div class="view-title">Proyectos</div>
-      <div class="view-sub">Contenido, documentación y links — todo junto por proyecto</div>
+      <div class="view-sub">Descripción y seguimiento por proyecto</div>
     </div>
     <button class="btn-primary" id="topicAddBtn">${icon('plus')}<span>Nuevo proyecto</span></button>
   </div>
   <div class="topics-grid">
-    ${STATE.topics.map(t => `
+    ${STATE.topics.map(t => {
+      const preview = stripHtml(t.contentHtml);
+      return `
       <div class="topic-card" data-open-topic="${t.id}">
         <div class="topic-bar" style="background:${t.color}"></div>
         <div class="topic-name">${escapeHtml(t.title)}</div>
-        <div class="topic-sub">${(t.items||[]).length} ítem${(t.items||[]).length!==1?'s':''}</div>
+        <div class="topic-sub">${preview ? escapeHtml(preview.slice(0,80)) : 'Sin descripción todavía'}</div>
         <div class="topic-foot">
           ${userChip(t.updatedBy,20)}
           <span class="row-meta">${timeAgo(t.updatedAt)}</span>
         </div>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
     <div class="topic-card" id="topicAddCard" style="display:flex;align-items:center;justify-content:center;border-style:dashed;color:var(--text-faint);min-height:110px;">
       ${icon('plus')}&nbsp;Nuevo proyecto
     </div>
@@ -1224,7 +1217,6 @@ function renderTopics(){
 }
 function renderTopicDetail(topic){
   const editable = canEdit(topic);
-  const items = topic.items || [];
   return `
   <div class="view-header">
     <div>
@@ -1232,6 +1224,7 @@ function renderTopicDetail(topic){
       <div class="view-title">${escapeHtml(topic.title)} ${!editable?`<span class="tag" style="vertical-align:middle;margin-left:8px;font-weight:600;">${icon('users')} Solo lectura</span>`:''}</div>
       <div class="view-sub">Creado por ${USERS[topic.createdBy]?.name} · editado ${timeAgo(topic.updatedAt)}</div>
     </div>
+    ${editable ? `<button class="btn-secondary" id="topicDeleteBtn" style="color:var(--accent);border-color:var(--accent-soft-2)">${icon('trash')}<span>Eliminar proyecto</span></button>` : ''}
   </div>
   <div class="sub-section">
     <div class="sub-section-head"><div class="sub-section-title">Descripción</div></div>
@@ -1249,23 +1242,6 @@ function renderTopicDetail(topic){
       </div>
       <div class="note-content note-content-auto" id="subContent" contenteditable="true">${topic.contentHtml || '<p></p>'}</div>
     ` : `<div class="note-content note-content-auto">${topic.contentHtml || '<p style="color:var(--text-faint)">Sin descripción todavía.</p>'}</div>`}
-  </div>
-  <div class="sub-section">
-    <div class="sub-section-head"><div class="sub-section-title">Documentos y links</div>${editable?`<div class="panel-link" data-add-item="1">+ Agregar</div>`:''}</div>
-    ${items.length ? items.map((it,i)=>`
-      <div class="link-row">
-        ${icon(it.type==='link'?'link':'file')}
-        ${it.type==='link' ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.name)}</a>` : `<span style="flex:1">${escapeHtml(it.name)}</span>`}
-        ${editable?`<span class="tag-x" data-del-item="${i}">${ICN.x}</span>`:''}
-      </div>`).join('') : `<div class="es" style="color:var(--text-faint);font-size:12.5px;">Sin links ni documentos todavía.</div>`}
-  </div>
-  <div class="sub-section">
-    <div class="sub-section-title" style="margin-bottom:10px;">Comentarios</div>
-    ${(topic.comments||[]).map(c=>`<div class="comment-item">${userChip(c.author,28)}<div class="comment-body"><div class="comment-head"><span class="comment-author">${USERS[c.author]?.name}</span><span class="comment-time">${timeAgo(c.date)}</span></div><div class="comment-text">${escapeHtml(c.text)}</div></div></div>`).join('')}
-    <div class="comment-input-row">
-      <input type="text" id="subtopicCommentInput" placeholder="Escribir un comentario…">
-      <button class="btn-secondary" id="subtopicCommentBtn">Comentar</button>
-    </div>
   </div>`;
 }
 
@@ -1429,70 +1405,13 @@ function openTopicModal(){
       const title = document.getElementById('ntTitle').value.trim();
       if(!title){ toast('Ponele un nombre al proyecto'); return; }
       const now = Date.now();
-      STATE.topics.push({ id:uid(), title, color:chosenColor, contentHtml:'<p></p>', items:[], comments:[], createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+      STATE.topics.push({ id:uid(), title, color:chosenColor, contentHtml:'<p></p>', createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
       logActivity('topic', `creó el proyecto "${title}"`);
       saveData(); closeModal(); renderApp(); toast('Proyecto creado','check');
     }
   });
   wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModal));
   document.getElementById('ntTitle').focus();
-}
-
-function openAddItemModal(onSubmit){
-  let type = 'doc';
-  const wrap = openModal(`
-    <div class="modal" style="width:420px">
-      <div class="modal-header"><div class="modal-title">Agregar a la página</div><button class="icon-btn" data-close-modal>${icon('x')}</button></div>
-      <div class="modal-body">
-        <div class="field">
-          <label>Tipo</label>
-          <div class="seg" style="width:100%;">
-            <button class="seg-btn active" style="flex:1" data-item-type="doc">${icon('file')}<span style="margin-left:5px;">Documento</span></button>
-            <button class="seg-btn" style="flex:1" data-item-type="link">${icon('link')}<span style="margin-left:5px;">Link</span></button>
-          </div>
-        </div>
-        <div class="field" id="itemFilePickerField">
-          <label>Archivo</label>
-          <button class="btn-secondary" id="itemFilePickBtn" style="width:100%;justify-content:center;">${icon('file')}<span>Elegir archivo de tu compu…</span></button>
-          <input type="file" id="itemFileInput" class="hidden">
-        </div>
-        <div class="field"><label>Nombre</label><input type="text" id="itemNameInput" placeholder="Ej. Análisis_FCI.xlsx"></div>
-        <div class="field hidden" id="itemUrlField"><label>URL</label><input type="text" id="itemUrlInput" placeholder="https://…"></div>
-        <div class="es" style="color:var(--text-faint);font-size:11.5px;line-height:1.5;">
-          ${icon('users')} Ojo: esto guarda el <b>nombre</b> del archivo como referencia, no el archivo en sí — Planner no tiene dónde alojar el contenido. Para que Lucas pueda abrirlo de verdad, subilo a Drive/SharePoint y pegá el link acá como tipo "Link".
-        </div>
-      </div>
-      <div class="modal-footer"><button class="btn-secondary" data-close-modal>Cancelar</button><button class="btn-primary" id="itemSaveBtn">${icon('check')}<span>Agregar</span></button></div>
-    </div>`);
-  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModal));
-  wrap.querySelectorAll('[data-item-type]').forEach(btn => btn.addEventListener('click', () => {
-    type = btn.dataset.itemType;
-    wrap.querySelectorAll('[data-item-type]').forEach(b=>b.classList.toggle('active', b===btn));
-    document.getElementById('itemUrlField').classList.toggle('hidden', type!=='link');
-    document.getElementById('itemFilePickerField').classList.toggle('hidden', type==='link');
-    document.getElementById('itemNameInput').placeholder = type==='link' ? 'Ej. CNV — Normativa FCI' : 'Ej. Análisis_FCI.xlsx';
-  }));
-  document.getElementById('itemFilePickBtn').addEventListener('click', () => document.getElementById('itemFileInput').click());
-  document.getElementById('itemFileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) document.getElementById('itemNameInput').value = file.name;
-  });
-  const submit = () => {
-    const name = document.getElementById('itemNameInput').value.trim();
-    if(!name){ toast('Ponele un nombre'); return; }
-    let url = '';
-    if(type === 'link'){
-      url = document.getElementById('itemUrlInput').value.trim();
-      if(!url){ toast('Pegá la URL del link'); return; }
-      if(!url.startsWith('http')) url = 'https://'+url;
-    }
-    onSubmit({ id:uid(), type, name, url });
-    closeModal();
-  };
-  document.getElementById('itemSaveBtn').addEventListener('click', submit);
-  document.getElementById('itemNameInput').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); if(type==='doc') submit(); else document.getElementById('itemUrlInput').focus(); } });
-  document.getElementById('itemUrlInput').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); submit(); } });
-  document.getElementById('itemNameInput').focus();
 }
 
 function promptModal(title, placeholder, onSubmit){
@@ -1873,26 +1792,12 @@ function bindTopicsEvents(){
     }));
   }
 
-  document.querySelectorAll('[data-add-item]').forEach(el => el.addEventListener('click', () => {
-    openAddItemModal((item) => {
-      topic.items = topic.items || [];
-      topic.items.push(item);
-      touch(topic);
-      saveData(); renderApp();
-    });
-  }));
-  document.querySelectorAll('[data-del-item]').forEach(el => el.addEventListener('click', () => {
-    const idx = +el.dataset.delItem;
-    topic.items.splice(idx,1); touch(topic); saveData(); renderApp();
-  }));
-  const commentBtn = document.getElementById('subtopicCommentBtn');
-  if(commentBtn) commentBtn.addEventListener('click', () => {
-    const inp = document.getElementById('subtopicCommentInput');
-    if(inp.value.trim()){
-      topic.comments = topic.comments || [];
-      topic.comments.push({ id:uid(), author:PREFS.user, text:inp.value.trim(), date:Date.now() });
-      touch(topic); saveData(); renderApp();
-    }
+  const deleteBtn = document.getElementById('topicDeleteBtn');
+  if(deleteBtn) deleteBtn.addEventListener('click', () => {
+    STATE.topics = STATE.topics.filter(t=>t.id!==topic.id);
+    logActivity('topic', `eliminó el proyecto "${topic.title}"`);
+    topicsActiveId = null;
+    saveData(); renderApp(); toast('Proyecto eliminado','trash');
   });
 }
 
