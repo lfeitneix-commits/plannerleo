@@ -1232,17 +1232,29 @@ function renderPainPoints(){
     </div>
     <button class="btn-primary" id="addPainPointBtn">${icon('plus')}<span>Agregar punto de dolor</span></button>
   </div>
-  ${areaIds.length ? areaIds.map(areaId => `
+  ${areaIds.length ? areaIds.map(areaId => {
+    const PRIO_RANK = { alta:0, media:1, baja:2 };
+    const points = byArea[areaId].slice().sort((a,b) => {
+      const r = PRIO_RANK[a.priority||'media'] - PRIO_RANK[b.priority||'media'];
+      return r !== 0 ? r : b.createdAt-a.createdAt;
+    });
+    return `
     <div class="sub-section">
       <div class="sub-section-title" style="margin-bottom:10px;color:var(--text);font-weight:700;font-size:14px;text-transform:none;letter-spacing:0;">${escapeHtml(areasById[areaId].name)}</div>
       <div class="task-list">
-        ${byArea[areaId].sort((a,b)=>b.createdAt-a.createdAt).map(p => `
+        ${points.map(p => {
+          const prio = PRIORITIES[p.priority||'media'];
+          return `
           <div class="task-row" data-open-painpoint="${p.id}">
             <div style="flex:1;min-width:0">${descBullets(p.text)}</div>
+            <span class="pill ${prio.cls}"><span class="pill-dot"></span>${prio.label}</span>
+            <span class="tag">${p.status||'Pendiente'}</span>
             <span class="row-meta" style="white-space:nowrap;">${USERS[p.createdBy]?.name||''} · ${timeAgo(p.createdAt)}</span>
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>
-    </div>`).join('') : emptyBig('activity','Todavía no hay puntos de dolor relevados','Tocá "Agregar punto de dolor" y sumá el primero por área.')}`;
+    </div>`;
+  }).join('') : emptyBig('activity','Todavía no hay puntos de dolor relevados','Tocá "Agregar punto de dolor" y sumá el primero por área.')}`;
 }
 function painPointModalHtml(p){
   const isNew = !p;
@@ -1260,6 +1272,10 @@ function painPointModalHtml(p){
         <datalist id="ppAreaList">${STATE.painAreas.map(a=>`<option value="${escapeHtml(a.name)}">`).join('')}</datalist>
       </div>
       <div class="field"><label>Punto de dolor</label><textarea id="ppText" placeholder="Describí el problema relevado…">${p?escapeHtml(p.text):''}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Prioridad</label><select id="ppPriority">${Object.entries(PRIORITIES).map(([k,v])=>`<option value="${k}" ${(p?p.priority:'media')===k?'selected':''}>${v.label}</option>`).join('')}</select></div>
+        <div class="field"><label>Estado</label><select id="ppStatus">${STATUSES.map(s=>`<option ${(p?p.status:'Pendiente')===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      </div>
     </div>
     <div class="modal-footer">
       ${!isNew?`<button class="btn-ghost" id="ppDeleteBtn" style="color:var(--accent);margin-right:auto">Eliminar</button>`:''}
@@ -1280,6 +1296,8 @@ function openPainPointModal(id){
   document.getElementById('ppSaveBtn').addEventListener('click', () => {
     const areaName = document.getElementById('ppArea').value.trim();
     const text = document.getElementById('ppText').value.trim();
+    const priority = document.getElementById('ppPriority').value;
+    const status = document.getElementById('ppStatus').value;
     if(!areaName){ toast('Ponele un área'); return; }
     if(!text){ toast('Escribí el punto de dolor'); return; }
     const now = Date.now();
@@ -1288,8 +1306,8 @@ function openPainPointModal(id){
       area = { id:uid(), name:areaName, color: TOPIC_COLORS[STATE.painAreas.length % TOPIC_COLORS.length], createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now };
       STATE.painAreas.push(area);
     }
-    if(p){ p.areaId = area.id; p.text = text; p.updatedBy = PREFS.user; p.updatedAt = now; }
-    else STATE.painPoints.push({ id:uid(), areaId:area.id, text, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    if(p){ p.areaId = area.id; p.text = text; p.priority = priority; p.status = status; p.updatedBy = PREFS.user; p.updatedAt = now; }
+    else STATE.painPoints.push({ id:uid(), areaId:area.id, text, priority, status, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
     saveData(); closeModal(); renderApp(); toast(p?'Actualizado':'Punto de dolor agregado','check');
   });
   document.getElementById('ppArea').focus();
