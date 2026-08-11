@@ -648,6 +648,7 @@ let PREFS = null;
 let currentView = 'dashboard';
 let taskFilters = { status: 'all', priority: 'all', assignee: 'all', view: 'list', tab: 'active' };
 let topicsActiveId = null;
+let painAreaActiveId = null;
 let searchQuery = '';
 let saveTimer = null;
 
@@ -662,6 +663,7 @@ function defaultData(){
     reminders: [],
     activity: [],
     meetingSummaries: [],
+    painAreas: [],
     painPoints: [],
   };
 }
@@ -1141,78 +1143,132 @@ function renderTopicDetail(topic){
 
 /* ===================== PUNTOS DE DOLOR RELEVADOS ===================== */
 function renderPainPoints(){
-  const byArea = {};
-  STATE.painPoints.forEach(p => { (byArea[p.area] = byArea[p.area]||[]).push(p); });
-  const areaNames = Object.keys(byArea).sort((a,b)=>a.localeCompare(b));
+  if(painAreaActiveId){
+    const area = STATE.painAreas.find(a=>a.id===painAreaActiveId);
+    if(area) return renderPainAreaDetail(area);
+    painAreaActiveId = null;
+  }
   return `
   <div class="view-header">
     <div>
       <div class="view-title">Puntos de dolor relevados</div>
-      <div class="view-sub">Relevamiento de problemas, agrupados por área</div>
+      <div class="view-sub">Un área por card — adentro sumás todos los puntos de dolor que quieras</div>
     </div>
-    <button class="btn-primary" id="addPainPointBtn">${icon('plus')}<span>Agregar punto de dolor</span></button>
+    <button class="btn-primary" id="painAreaAddBtn">${icon('plus')}<span>Nueva área</span></button>
   </div>
-  ${areaNames.length ? areaNames.map(area => `
-    <div class="sub-section">
-      <div class="sub-section-title" style="margin-bottom:10px;">${escapeHtml(area)}</div>
-      <div class="task-list">
-        ${byArea[area].sort((a,b)=>b.createdAt-a.createdAt).map(p => `
-          <div class="task-row" data-open-painpoint="${p.id}">
-            <div style="flex:1;min-width:0">${descBullets(p.text)}</div>
-            <span class="row-meta" style="white-space:nowrap;">${USERS[p.createdBy]?.name||''} · ${timeAgo(p.createdAt)}</span>
-          </div>`).join('')}
-      </div>
-    </div>`).join('') : emptyBig('activity','Todavía no hay puntos de dolor relevados','Tocá "Agregar punto de dolor" y sumá el primero por área.')}`;
-}
-function painPointModalHtml(p){
-  const isNew = !p;
-  const areaOptions = [...new Set(STATE.painPoints.map(x=>x.area))];
-  return `
-  <div class="modal" id="painPointModal">
-    <div class="modal-header">
-      <div class="modal-title">${isNew?'Nuevo punto de dolor':'Editar punto de dolor'}</div>
-      <button class="icon-btn" data-close-modal>${icon('x')}</button>
-    </div>
-    <div class="modal-body">
-      <div class="field">
-        <label>Área</label>
-        <input type="text" id="ppArea" list="ppAreaList" value="${p?escapeHtml(p.area):''}" placeholder="Ej. Operaciones">
-        <datalist id="ppAreaList">${areaOptions.map(a=>`<option value="${escapeHtml(a)}">`).join('')}</datalist>
-      </div>
-      <div class="field"><label>Punto de dolor</label><textarea id="ppText" placeholder="Describí el problema relevado…">${p?escapeHtml(p.text):''}</textarea></div>
-    </div>
-    <div class="modal-footer">
-      ${!isNew?`<button class="btn-ghost" id="ppDeleteBtn" style="color:var(--accent);margin-right:auto">Eliminar</button>`:''}
-      <button class="btn-secondary" data-close-modal>Cancelar</button>
-      <button class="btn-primary" id="ppSaveBtn">${icon('check')}<span>${isNew?'Agregar':'Guardar cambios'}</span></button>
+  <div class="topics-grid">
+    ${STATE.painAreas.map(a => {
+      const count = STATE.painPoints.filter(p=>p.areaId===a.id).length;
+      return `
+      <div class="topic-card" data-open-painarea="${a.id}">
+        <div class="topic-bar" style="background:${a.color}"></div>
+        <div class="topic-name">${escapeHtml(a.name)}</div>
+        <div class="topic-sub">${count} punto${count!==1?'s':''} de dolor</div>
+        <div class="topic-foot">
+          ${userChip(a.updatedBy,20)}
+          <span class="row-meta">${timeAgo(a.updatedAt)}</span>
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="topic-card" id="painAreaAddCard" style="display:flex;align-items:center;justify-content:center;border-style:dashed;color:var(--text-faint);min-height:110px;">
+      ${icon('plus')}&nbsp;Nueva área
     </div>
   </div>`;
 }
-function openPainPointModal(id){
-  const p = id ? STATE.painPoints.find(x=>x.id===id) : null;
-  const wrap = openModal(painPointModalHtml(p));
+function renderPainAreaDetail(area){
+  const points = STATE.painPoints.filter(p=>p.areaId===area.id).sort((a,b)=>b.createdAt-a.createdAt);
+  return `
+  <div class="view-header">
+    <div>
+      <div class="btn-ghost" id="backToPainAreas" style="padding:4px 0;margin-bottom:6px;display:inline-flex;align-items:center;gap:5px;">${icon('chevL')} Puntos de dolor relevados</div>
+      <div class="view-title">${escapeHtml(area.name)}</div>
+      <div class="view-sub">${points.length} punto${points.length!==1?'s':''} de dolor</div>
+    </div>
+    <button class="btn-secondary" id="painAreaDeleteBtn" style="color:var(--accent);border-color:var(--accent-soft-2)">${icon('trash')}<span>Eliminar área</span></button>
+  </div>
+  <div class="sub-section">
+    <div class="checklist-mini" id="painPointsWrap">
+      ${points.length ? points.map(p=>`
+        <div class="cl-row">
+          <span class="cl-text" style="flex:1;">${escapeHtml(p.text)}</span>
+          <span class="row-meta">${timeAgo(p.createdAt)}</span>
+          <span class="tag-x" data-del-painpoint="${p.id}">${ICN.x}</span>
+        </div>`).join('') : `<div class="es" style="color:var(--text-faint);font-size:12.5px;">Todavía no hay puntos de dolor en esta área.</div>`}
+    </div>
+    <div class="cl-input-row">
+      <input type="text" id="ppNewPointInput" placeholder="Escribí un punto de dolor y Enter">
+      <button class="btn-ghost" id="ppAddPointBtn">Agregar</button>
+    </div>
+  </div>`;
+}
+function painAreaModalHtml(){
+  return `
+  <div class="modal" style="width:420px">
+    <div class="modal-header"><div class="modal-title">Nueva área</div><button class="icon-btn" data-close-modal>${icon('x')}</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre del área</label><input type="text" id="paName" placeholder="Ej. Operaciones"></div>
+      <div class="field"><label>Color</label><div style="display:flex;gap:8px;">${TOPIC_COLORS.map((c,i)=>`<div data-pa-color="${c}" style="width:28px;height:28px;border-radius:9px;background:${c};cursor:pointer;border:2px solid ${i===0?'var(--text)':'transparent'}"></div>`).join('')}</div></div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" data-close-modal>Cancelar</button><button class="btn-primary" id="paSaveBtn">${icon('check')}<span>Crear área</span></button></div>
+  </div>`;
+}
+function openPainAreaModal(){
+  const wrap = openModal(painAreaModalHtml());
+  let chosenColor = TOPIC_COLORS[0];
+  wrap.addEventListener('click', (e) => {
+    const sw = e.target.closest('[data-pa-color]');
+    if(sw){ chosenColor = sw.dataset.paColor; wrap.querySelectorAll('[data-pa-color]').forEach(el=>el.style.border='2px solid transparent'); sw.style.border='2px solid var(--text)'; }
+    if(e.target.closest('#paSaveBtn')){
+      const name = document.getElementById('paName').value.trim();
+      if(!name){ toast('Ponele un nombre al área'); return; }
+      const now = Date.now();
+      STATE.painAreas.push({ id:uid(), name, color:chosenColor, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+      saveData(); closeModal(); renderApp(); toast('Área creada','check');
+    }
+  });
   wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModal));
-  const delBtn = document.getElementById('ppDeleteBtn');
-  if(delBtn) delBtn.addEventListener('click', () => {
-    STATE.painPoints = STATE.painPoints.filter(x=>x.id!==p.id);
-    saveData(); closeModal(); renderApp(); toast('Punto de dolor eliminado','trash');
-  });
-  document.getElementById('ppSaveBtn').addEventListener('click', () => {
-    const area = document.getElementById('ppArea').value.trim();
-    const text = document.getElementById('ppText').value.trim();
-    if(!area){ toast('Ponele un área'); return; }
-    if(!text){ toast('Escribí el punto de dolor'); return; }
-    const now = Date.now();
-    if(p){ p.area = area; p.text = text; p.updatedBy = PREFS.user; p.updatedAt = now; }
-    else STATE.painPoints.push({ id:uid(), area, text, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
-    saveData(); closeModal(); renderApp(); toast(p?'Actualizado':'Punto de dolor agregado','check');
-  });
-  document.getElementById('ppArea').focus();
+  document.getElementById('paName').focus();
 }
 function bindPainPointsEvents(){
-  const addBtn = document.getElementById('addPainPointBtn');
-  if(addBtn) addBtn.addEventListener('click', () => openPainPointModal());
-  document.querySelectorAll('[data-open-painpoint]').forEach(el => el.addEventListener('click', () => openPainPointModal(el.dataset.openPainpoint)));
+  const addAreaBtn = document.getElementById('painAreaAddBtn');
+  if(addAreaBtn) addAreaBtn.addEventListener('click', openPainAreaModal);
+  const addAreaCard = document.getElementById('painAreaAddCard');
+  if(addAreaCard) addAreaCard.addEventListener('click', openPainAreaModal);
+  document.querySelectorAll('[data-open-painarea]').forEach(el => el.addEventListener('click', () => { painAreaActiveId = el.dataset.openPainarea; renderApp(); }));
+
+  const backBtn = document.getElementById('backToPainAreas');
+  if(backBtn) backBtn.addEventListener('click', () => { painAreaActiveId = null; renderApp(); });
+
+  const area = STATE.painAreas.find(a=>a.id===painAreaActiveId);
+  if(!area) return;
+
+  const deleteAreaBtn = document.getElementById('painAreaDeleteBtn');
+  if(deleteAreaBtn) deleteAreaBtn.addEventListener('click', () => {
+    STATE.painAreas = STATE.painAreas.filter(a=>a.id!==area.id);
+    STATE.painPoints = STATE.painPoints.filter(p=>p.areaId!==area.id);
+    painAreaActiveId = null;
+    saveData(); renderApp(); toast('Área eliminada','trash');
+  });
+
+  const addPoint = () => {
+    const inp = document.getElementById('ppNewPointInput');
+    const text = inp.value.trim();
+    if(!text) return;
+    const now = Date.now();
+    STATE.painPoints.push({ id:uid(), areaId:area.id, text, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    area.updatedBy = PREFS.user; area.updatedAt = now;
+    saveData(); renderApp();
+    setTimeout(()=>{ const el = document.getElementById('ppNewPointInput'); if(el) el.focus(); }, 0);
+  };
+  const addPointBtn = document.getElementById('ppAddPointBtn');
+  if(addPointBtn) addPointBtn.addEventListener('click', addPoint);
+  const newPointInput = document.getElementById('ppNewPointInput');
+  if(newPointInput) newPointInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); addPoint(); } });
+
+  document.querySelectorAll('[data-del-painpoint]').forEach(el => el.addEventListener('click', () => {
+    STATE.painPoints = STATE.painPoints.filter(x=>x.id!==el.dataset.delPainpoint);
+    saveData(); renderApp();
+  }));
 }
 
 /* ===================== CONFIGURACIÓN ===================== */
@@ -1804,6 +1860,29 @@ function migrateMeetingSummaries(){
   delete STATE.todos;
 }
 
+/* Versiones viejas guardaban cada punto de dolor con un campo "area" de texto suelto,
+   en vez de pertenecer a un área propia. Si encuentra ese formato, crea (o reutiliza)
+   el área correspondiente y engancha el punto ahí. */
+function migratePainPoints(){
+  if(!STATE.painAreas) STATE.painAreas = [];
+  if(!STATE.painPoints) STATE.painPoints = [];
+  let migrated = false;
+  STATE.painPoints.forEach(p => {
+    if(p.area && !p.areaId){
+      migrated = true;
+      let area = STATE.painAreas.find(a=>a.name.toLowerCase()===p.area.toLowerCase());
+      if(!area){
+        const now = Date.now();
+        area = { id:uid(), name:p.area, color: TOPIC_COLORS[STATE.painAreas.length % TOPIC_COLORS.length], createdBy:p.createdBy||PREFS.user, updatedBy:p.createdBy||PREFS.user, createdAt:now, updatedAt:now };
+        STATE.painAreas.push(area);
+      }
+      p.areaId = area.id;
+      delete p.area;
+    }
+  });
+  if(migrated) saveData();
+}
+
 /* Chequea cada tanto si hay cambios hechos por el otro usuario (solo con Firebase activo)
    y refresca sin pisar lo que se esté escribiendo en ese momento. */
 function startFirebaseSync(){
@@ -1819,7 +1898,7 @@ function startFirebaseSync(){
         lastSeen = res.value;
         STATE = JSON.parse(res.value);
         migrateMeetingSummaries();
-        if(!STATE.painPoints) STATE.painPoints = [];
+        migratePainPoints();
         if(STATE.users && Object.keys(STATE.users).length) USERS = STATE.users;
         renderApp();
       }
@@ -1831,7 +1910,7 @@ async function initApp(){
   await loadData();
   if(!STATE || !STATE.tasks) STATE = defaultData();
   migrateMeetingSummaries();
-  if(!STATE.painPoints) STATE.painPoints = [];
+  migratePainPoints();
   if(!STATE.users || !Object.keys(STATE.users).length){ STATE.users = JSON.parse(JSON.stringify(USERS)); saveData(); }
   USERS = STATE.users;
   migrateTopics();
