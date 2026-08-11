@@ -393,6 +393,8 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 .cal-cell.other-month{opacity:.35;}
 .cal-cell.today{border-color:var(--accent);background:var(--accent-soft);}
 .cal-num{font-family:'DM Mono',monospace;font-size:12.5px;font-weight:500;}
+.cal-event{font-size:10px;font-weight:600;background:var(--accent-soft);color:var(--accent);border-radius:5px;padding:1px 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-cell.today .cal-event{background:var(--surface);}
 .cal-dot-row{display:flex;flex-wrap:wrap;gap:3px;}
 .cal-dot{width:6px;height:6px;border-radius:50%;}
 .cal-more{font-size:10px;color:var(--text-faint);font-family:'DM Mono',monospace;}
@@ -649,6 +651,7 @@ let currentView = 'dashboard';
 let taskFilters = { status: 'all', priority: 'all', assignee: 'all', view: 'list', tab: 'active' };
 let topicsActiveId = null;
 let painAreaActiveId = null;
+let calendarMonthStart = toISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 let searchQuery = '';
 let saveTimer = null;
 
@@ -663,6 +666,7 @@ function defaultData(){
     reminders: [],
     activity: [],
     meetingSummaries: [],
+    calendarEvents: [],
     painAreas: [],
     painPoints: [],
   };
@@ -759,7 +763,7 @@ function renderSidebar(){
   const c = navCounts();
   const items = [
     { id:'dashboard', label:'Inicio', icon:'dashboard' },
-    { id:'planner', label:'Reunión', icon:'planner' },
+    { id:'planner', label:'Reuniones', icon:'planner' },
     { id:'tasks', label:'Tareas', icon:'tasks', count:c.pendingTasks },
     { id:'topics', label:'Proyectos', icon:'topics', count:c.topicsCount },
     { id:'painpoints', label:'Puntos de dolor relevados', icon:'activity' },
@@ -815,7 +819,7 @@ function globalSearchResults(q){
 
 function renderTopbar(){
   const results = globalSearchResults(searchQuery);
-  const titleMap = { dashboard:'Inicio', planner:'Reunión', tasks:'Tareas', topics:'Proyectos', painpoints:'Puntos de dolor relevados', settings:'Configuración' };
+  const titleMap = { dashboard:'Inicio', planner:'Reuniones', tasks:'Tareas', topics:'Proyectos', painpoints:'Puntos de dolor relevados', settings:'Configuración' };
   return `
   <div class="topbar">
     <div class="search-wrap">
@@ -926,14 +930,89 @@ function meetingSummaryRowHtml(s){
     <span class="row-meta" style="white-space:nowrap;">${USERS[s.createdBy]?.name||''} · ${timeAgo(s.createdAt)}</span>
   </div>`;
 }
+function renderMeetingsCalendar(){
+  const monthDate = fromISO(calendarMonthStart);
+  const gridStart = startOfWeek(monthDate);
+  const currentMonthStart = toISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const cells = Array.from({length:42}).map((_,i) => {
+    const d = addDays(gridStart, i);
+    const iso = toISO(d);
+    const otherMonth = d.getMonth() !== monthDate.getMonth();
+    const isToday = isSameDay(d, new Date());
+    const dayEvents = STATE.calendarEvents.filter(e=>e.date===iso).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+    return `
+    <div class="cal-cell ${otherMonth?'other-month':''} ${isToday?'today':''}" data-cal-day="${iso}">
+      <div class="cal-num">${d.getDate()}</div>
+      ${dayEvents.slice(0,3).map(e=>`<div class="cal-event">${e.time?escapeHtml(e.time)+' ':''}${escapeHtml(e.title)}</div>`).join('')}
+      ${dayEvents.length>3 ? `<div class="cal-more">+${dayEvents.length-3} más</div>` : ''}
+    </div>`;
+  }).join('');
+  return `
+  <div class="sub-section">
+    <div class="sub-section-head">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="icon-btn" data-cal-nav="-1">${icon('chevL')}</button>
+        <div style="font-weight:700;font-size:14px;min-width:130px;text-align:center;text-transform:capitalize;">${MONTH_NAMES[monthDate.getMonth()].toLowerCase()} ${monthDate.getFullYear()}</div>
+        <button class="icon-btn" data-cal-nav="1">${icon('chev')}</button>
+      </div>
+      ${calendarMonthStart !== currentMonthStart ? `<button class="btn-ghost" data-cal-nav="0">Volver a hoy</button>` : ''}
+    </div>
+    <div class="cal-grid">
+      ${DAY_SHORT.map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+      ${cells}
+    </div>
+  </div>`;
+}
+function calendarDayModalHtml(iso){
+  const events = STATE.calendarEvents.filter(e=>e.date===iso).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  return `
+  <div class="modal" style="width:420px">
+    <div class="modal-header"><div class="modal-title" style="text-transform:capitalize">${fmtDateLong(iso)}</div><button class="icon-btn" data-close-modal>${icon('x')}</button></div>
+    <div class="modal-body">
+      <div class="checklist-mini" id="calEventsWrap">
+        ${events.length ? events.map(e=>`
+          <div class="cl-row">
+            <span class="row-meta" style="min-width:44px;">${e.time||''}</span>
+            <span class="cl-text" style="flex:1;">${escapeHtml(e.title)}</span>
+            <span class="tag-x" data-del-event="${e.id}">${ICN.x}</span>
+          </div>`).join('') : `<div class="es" style="color:var(--text-faint);font-size:12.5px;">Sin eventos este día.</div>`}
+      </div>
+      <div class="field-row" style="margin-top:14px;">
+        <div class="field" style="flex:2;margin-bottom:0;"><label>Evento</label><input type="text" id="evTitle" placeholder="Ej. Reunión con Apex Group"></div>
+        <div class="field" style="flex:1;margin-bottom:0;"><label>Hora (opcional)</label><input type="time" id="evTime"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" data-close-modal>Cerrar</button><button class="btn-primary" id="evAddBtn">${icon('plus')}<span>Agregar evento</span></button></div>
+  </div>`;
+}
+function openCalendarDayModal(iso){
+  const wrap = openModal(calendarDayModalHtml(iso));
+  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', () => { closeModal(); renderApp(); }));
+  wrap.querySelectorAll('[data-del-event]').forEach(el => el.addEventListener('click', () => {
+    STATE.calendarEvents = STATE.calendarEvents.filter(x=>x.id!==el.dataset.delEvent);
+    saveData(); closeModal(); openCalendarDayModal(iso);
+  }));
+  const add = () => {
+    const title = document.getElementById('evTitle').value.trim();
+    if(!title){ toast('Ponele un título al evento'); return; }
+    const time = document.getElementById('evTime').value;
+    const now = Date.now();
+    STATE.calendarEvents.push({ id:uid(), date:iso, title, time, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    saveData(); closeModal(); openCalendarDayModal(iso);
+  };
+  document.getElementById('evAddBtn').addEventListener('click', add);
+  document.getElementById('evTitle').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); add(); } });
+  document.getElementById('evTitle').focus();
+}
 function renderPlanner(){
   const list = [...STATE.meetingSummaries].sort((a,b)=>b.createdAt-a.createdAt);
   return `
   <div class="view-header">
     <div>
-      <div class="view-title">Reunión</div>
+      <div class="view-title">Reuniones</div>
     </div>
   </div>
+  ${renderMeetingsCalendar()}
   <div class="sub-section">
     <div class="sub-section-head">
       <div class="sub-section-title">Resumen de reunión</div>
@@ -1622,6 +1701,17 @@ function bindPlannerEvents(){
   const addBtn = document.getElementById('addMeetingSummaryBtn');
   if(addBtn) addBtn.addEventListener('click', () => openMeetingSummaryModal());
   document.querySelectorAll('[data-open-summary]').forEach(el => el.addEventListener('click', () => openMeetingSummaryModal(el.dataset.openSummary)));
+
+  document.querySelectorAll('[data-cal-nav]').forEach(el => el.addEventListener('click', () => {
+    const v = el.dataset.calNav;
+    if(v === '0') calendarMonthStart = toISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    else{
+      const d = fromISO(calendarMonthStart);
+      calendarMonthStart = toISO(new Date(d.getFullYear(), d.getMonth()+Number(v), 1));
+    }
+    renderApp();
+  }));
+  document.querySelectorAll('[data-cal-day]').forEach(el => el.addEventListener('click', () => openCalendarDayModal(el.dataset.calDay)));
 }
 
 function openDayModal(iso){
@@ -1899,6 +1989,7 @@ function startFirebaseSync(){
         STATE = JSON.parse(res.value);
         migrateMeetingSummaries();
         migratePainPoints();
+        if(!STATE.calendarEvents) STATE.calendarEvents = [];
         if(STATE.users && Object.keys(STATE.users).length) USERS = STATE.users;
         renderApp();
       }
@@ -1911,6 +2002,7 @@ async function initApp(){
   if(!STATE || !STATE.tasks) STATE = defaultData();
   migrateMeetingSummaries();
   migratePainPoints();
+  if(!STATE.calendarEvents) STATE.calendarEvents = [];
   if(!STATE.users || !Object.keys(STATE.users).length){ STATE.users = JSON.parse(JSON.stringify(USERS)); saveData(); }
   USERS = STATE.users;
   migrateTopics();
