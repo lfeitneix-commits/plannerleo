@@ -1783,6 +1783,27 @@ function migrateTopics(){
   if(migrated) saveData();
 }
 
+/* Versiones viejas guardaban meetingSummaries como objeto {semana: {text,...}} en vez de lista.
+   Si encuentra ese formato lo convierte a la lista nueva en vez de descartarlo. */
+function migrateMeetingSummaries(){
+  if(STATE.meetingSummaries && !Array.isArray(STATE.meetingSummaries)){
+    const now = Date.now();
+    STATE.meetingSummaries = Object.entries(STATE.meetingSummaries)
+      .filter(([,v]) => v && v.text && v.text.trim())
+      .map(([weekIso, v]) => ({
+        id: uid(), title: `Reunión ${fmtDateShort(weekIso)}`, description: v.text,
+        createdBy: v.updatedBy || PREFS.user, updatedBy: v.updatedBy || PREFS.user,
+        createdAt: v.updatedAt || now, updatedAt: v.updatedAt || now,
+      }));
+    saveData();
+  } else if(!STATE.meetingSummaries){
+    STATE.meetingSummaries = [];
+  }
+  delete STATE.meetingSlots;
+  delete STATE.dailyLogs;
+  delete STATE.todos;
+}
+
 /* Chequea cada tanto si hay cambios hechos por el otro usuario (solo con Firebase activo)
    y refresca sin pisar lo que se esté escribiendo en ese momento. */
 function startFirebaseSync(){
@@ -1797,7 +1818,7 @@ function startFirebaseSync(){
       if(res && res.value && res.value !== lastSeen){
         lastSeen = res.value;
         STATE = JSON.parse(res.value);
-        if(!STATE.meetingSummaries) STATE.meetingSummaries = [];
+        migrateMeetingSummaries();
         if(!STATE.painPoints) STATE.painPoints = [];
         if(STATE.users && Object.keys(STATE.users).length) USERS = STATE.users;
         renderApp();
@@ -1809,7 +1830,7 @@ function startFirebaseSync(){
 async function initApp(){
   await loadData();
   if(!STATE || !STATE.tasks) STATE = defaultData();
-  if(!STATE.meetingSummaries) STATE.meetingSummaries = [];
+  migrateMeetingSummaries();
   if(!STATE.painPoints) STATE.painPoints = [];
   if(!STATE.users || !Object.keys(STATE.users).length){ STATE.users = JSON.parse(JSON.stringify(USERS)); saveData(); }
   USERS = STATE.users;
