@@ -336,18 +336,6 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 .week-day .wd-name{font-size:10px;text-transform:uppercase;letter-spacing:.04em;opacity:.7;font-weight:600;}
 .week-day .wd-num{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;margin:3px 0;}
 .week-day .wd-count{font-size:10px;font-family:'DM Mono',monospace;opacity:.75;}
-.week-day.meeting-day{cursor:default;display:flex;flex-direction:column;gap:6px;}
-.week-day.meeting-day:hover{background:var(--surface-2);}
-.week-day.meeting-day.today:hover{background:var(--accent);}
-.meeting-time-input,.meeting-with-input{
-  width:100%;border:1px solid var(--border-soft);border-radius:7px;padding:4px 6px;font-size:11px;
-  font-family:inherit;background:var(--surface);color:var(--text);outline:none;box-sizing:border-box;
-  text-align:center;transition:border-color .15s;
-}
-.meeting-time-input:focus,.meeting-with-input:focus{border-color:var(--accent);}
-.meeting-with-input::placeholder{color:var(--text-faint);}
-.week-day.meeting-day.today .meeting-time-input,.week-day.meeting-day.today .meeting-with-input{border-color:rgba(255,255,255,.4);}
-.meeting-summary-wrap{padding:2px 20px 18px;}
 .quick-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:14px 20px 18px;}
 .qa-btn{
   display:flex;align-items:center;gap:9px;padding:12px 13px;border-radius:13px;border:1px solid var(--border-soft);
@@ -360,74 +348,6 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 .reminder-row:hover{background:var(--surface-2);}
 .reminder-text{font-size:13px;flex:1;}
 .reminder-date{font-size:11px;font-family:'DM Mono',monospace;color:var(--text-faint);}
-
-/* planner */
-.planner-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
-.week-nav{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border-soft);border-radius:11px;padding:4px;}
-.week-nav button{width:30px;height:30px;border-radius:8px;border:none;background:transparent;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;justify-content:center;}
-.week-nav button:hover{background:var(--surface-2);color:var(--text);}
-.week-nav button svg{width:15px;height:15px;}
-.week-nav .wn-label{font-size:13px;font-weight:600;padding:0 8px;font-family:'DM Mono',monospace;}
-.wn-today-btn{
-  display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:none;
-  background:var(--accent-soft);color:var(--accent);font-size:12.5px;font-weight:700;cursor:pointer;
-  transition:background .15s;
-}
-.wn-today-btn:hover{background:var(--accent-soft-2);}
-.wn-today-btn .ic svg{width:12px;height:12px;}
-.planner-board{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
-.planner-col{background:var(--surface);border:1px solid var(--border-soft);border-radius:16px;min-height:420px;display:flex;flex-direction:column;transition:border-color .15s,background .15s;}
-.planner-col.dragover{border-color:var(--accent);background:var(--accent-soft);}
-.planner-col.today{border-color:var(--accent);}
-.pc-head{padding:14px 14px 10px;border-bottom:1px solid var(--border-soft);position:relative;}
-.pc-head.today::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;background:var(--accent);border-radius:0 3px 3px 0;}
-.pc-day{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:700;}
-.pc-date{font-family:'DM Mono',monospace;font-size:15px;margin-top:2px;}
-.pc-body{flex:1;padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;}
-.pc-add{margin:2px 10px 12px;padding:8px;border-radius:10px;border:1.5px dashed var(--border);background:transparent;color:var(--text-faint);font-size:12px;font-weight:600;cursor:pointer;text-align:center;}
-.pc-add:hover{border-color:var(--accent);color:var(--accent);}
-.task-card{
-  background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:10px 11px;cursor:grab;
-  transition:box-shadow .15s,transform .12s,border-color .15s;
-}
-.task-card:hover{box-shadow:var(--shadow-sm);border-color:var(--text-faint);}
-.task-card.dragging{opacity:.4;}
-.task-card.done{opacity:.55;}
-.tc-top{display:flex;align-items:flex-start;gap:8px;}
-.tc-title{font-size:12.5px;font-weight:600;flex:1;line-height:1.35;}
-.tc-title.strike{text-decoration:line-through;color:var(--text-faint);}
-.tc-meta{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
-.tc-time{font-size:10.5px;font-family:'DM Mono',monospace;color:var(--text-faint);display:flex;align-items:center;gap:3px;}
-.tc-time .ic svg{width:11px;height:11px;}
-.todo-card{
-  background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:10px 11px;cursor:grab;
-  transition:box-shadow .15s,border-color .15s;
-}
-.todo-card:hover{box-shadow:var(--shadow-sm);border-color:var(--text-faint);}
-.todo-card.dragging{opacity:.4;}
-.todo-card.done{opacity:.55;}
-.todo-card .tc-top{display:flex;align-items:flex-start;gap:8px;}
-.todo-card .tag-x{margin-left:auto;opacity:.4;flex-shrink:0;}
-.todo-card .tag-x:hover{opacity:1;}
-.todo-link{
-  display:flex;align-items:center;gap:5px;margin-top:7px;padding:4px 8px;border-radius:7px;
-  background:var(--accent-soft);color:var(--accent);font-size:10.5px;font-weight:600;cursor:pointer;width:fit-content;max-width:100%;
-}
-.todo-link span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.todo-link .ic svg{width:11px;height:11px;}
-.todo-link:hover{background:var(--accent-soft-2);}
-.pc-log{padding:10px 12px 14px;border-top:1px solid var(--border-soft);margin-top:auto;}
-.pc-log-label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:6px;}
-.pc-log-label .ic{color:var(--text-faint);}
-.pc-log-label .ic svg{width:11px;height:11px;}
-.pc-log-input{
-  width:100%;min-height:56px;resize:vertical;border:1px solid var(--border-soft);background:var(--surface-2);
-  border-radius:9px;padding:7px 9px;font-size:11.5px;font-family:inherit;color:var(--text);outline:none;
-  transition:border-color .15s;line-height:1.45;
-}
-.pc-log-input:focus{border-color:var(--accent);}
-.pc-log-input::placeholder{color:var(--text-faint);}
-.pc-log-meta{font-size:10px;color:var(--text-faint);margin-top:4px;font-family:'DM Mono',monospace;}
 
 /* tasks view */
 .tasks-toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
@@ -459,6 +379,8 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 .board-col-head{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);padding:4px 6px 12px;display:flex;justify-content:space-between;}
 .board-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:11px;padding:10px 11px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s;}
 .board-card:hover{box-shadow:var(--shadow-sm);}
+.tc-title{font-size:12.5px;font-weight:600;flex:1;line-height:1.35;}
+.tc-meta{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
 
 /* calendar */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
@@ -724,8 +646,6 @@ function toast(msg, icn){
 let STATE = null;
 let PREFS = null;
 let currentView = 'dashboard';
-let plannerWeekStart = toISO(startOfWeek(new Date()));
-let plannerFilter = 'all';
 let taskFilters = { status: 'all', priority: 'all', assignee: 'all', view: 'list', tab: 'active' };
 let topicsActiveId = null;
 let searchQuery = '';
@@ -741,10 +661,8 @@ function defaultData(){
     topics: [],
     reminders: [],
     activity: [],
-    dailyLogs: {},
-    todos: [],
-    meetingSlots: {},
-    meetingSummaries: {},
+    meetingSummaries: [],
+    painPoints: [],
   };
 }
 
@@ -842,6 +760,7 @@ function renderSidebar(){
     { id:'planner', label:'Reunión', icon:'planner' },
     { id:'tasks', label:'Tareas', icon:'tasks', count:c.pendingTasks },
     { id:'topics', label:'Proyectos', icon:'topics', count:c.topicsCount },
+    { id:'painpoints', label:'Puntos de dolor relevados', icon:'activity' },
   ];
   const u = USERS[PREFS.user] || USERS.leo;
   return `
@@ -894,7 +813,7 @@ function globalSearchResults(q){
 
 function renderTopbar(){
   const results = globalSearchResults(searchQuery);
-  const titleMap = { dashboard:'Inicio', planner:'Reunión', tasks:'Tareas', topics:'Proyectos', settings:'Configuración' };
+  const titleMap = { dashboard:'Inicio', planner:'Reunión', tasks:'Tareas', topics:'Proyectos', painpoints:'Puntos de dolor relevados', settings:'Configuración' };
   return `
   <div class="topbar">
     <div class="search-wrap">
@@ -995,95 +914,70 @@ function taskRowMini(t, showDate){
 }
 
 /* ===================== PLANNER SEMANAL ===================== */
-function todoRowHtml(td){
-  const linked = td.linkedTaskId ? STATE.tasks.find(t=>t.id===td.linkedTaskId) : null;
-  const editable = canEdit(td);
+function meetingSummaryRowHtml(s){
   return `
-  <div class="todo-card ${td.done?'done':''}" draggable="${editable}" data-todo-id="${td.id}">
-    <div class="tc-top">
-      <div class="row-check ${td.done?'done':''} ${editable?'':'ro-check'}" ${editable?`data-toggle-todo="${td.id}"`:''} draggable="false" style="width:16px;height:16px;">${icon('check')}</div>
-      <div class="tc-title ${td.done?'strike':''}" ${editable?`data-edit-todo="${td.id}"`:''} draggable="false" style="cursor:${editable?'pointer':'default'};">${escapeHtml(td.text)}</div>
-      ${editable?`<span class="tag-x" data-del-todo="${td.id}" draggable="false">${ICN.x}</span>`:''}
+  <div class="task-row" data-open-summary="${s.id}">
+    <div style="flex:1;min-width:0">
+      <div class="tr-title">${escapeHtml(s.title)}</div>
+      ${s.description ? descBullets(s.description) : ''}
     </div>
-    ${linked ? `<div class="todo-link" data-open-task="${linked.id}" draggable="false">${icon('tasks')}<span>${escapeHtml(linked.title)}</span></div>` : ''}
+    <span class="row-meta" style="white-space:nowrap;">${USERS[s.createdBy]?.name||''} · ${timeAgo(s.createdAt)}</span>
   </div>`;
 }
 function renderPlanner(){
-  const wk = fromISO(plannerWeekStart);
-  const weekEnd = addDays(wk, 4);
-  const filterTodos = (arr) => plannerFilter==='all' ? arr : arr.filter(td=>td.createdBy===plannerFilter);
-  const cols = Array.from({length:5}).map((_,i) => {
-    const d = addDays(wk, i); const iso = toISO(d);
-    const dayTodos = filterTodos(STATE.todos.filter(td => td.date === iso)).sort((a,b)=>{
-      if(a.done !== b.done) return a.done ? 1 : -1;
-      return a.createdAt-b.createdAt;
-    });
-    const isToday = isSameDay(d, new Date());
-    const log = STATE.dailyLogs[iso];
-    return `
-    <div class="planner-col ${isToday?'today':''}" data-day-col="${iso}">
-      <div class="pc-head ${isToday?'today':''}">
-        <div class="pc-day">${DAY_SHORT[i]}</div>
-        <div class="pc-date mono">${d.getDate()} ${MONTH_NAMES[d.getMonth()].slice(0,3).toLowerCase()}</div>
-      </div>
-      <div class="pc-body" data-drop-zone="${iso}">
-        ${dayTodos.map(todoRowHtml).join('')}
-      </div>
-      <div class="pc-add" data-add-todo-day="${iso}">+ Agregar to-do</div>
-      <div class="pc-log">
-        <div class="pc-log-label">${icon('zap')}Qué hice hoy</div>
-        <textarea class="pc-log-input" data-log-day="${iso}" placeholder="Anotá un resumen del día…">${escapeHtml(log?log.text:'')}</textarea>
-        ${log && log.text ? `<div class="pc-log-meta">${USERS[log.updatedBy]?.name} · ${timeAgo(log.updatedAt)}</div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-
-  const meetingCols = Array.from({length:5}).map((_,i) => {
-    const d = addDays(wk, i); const iso = toISO(d);
-    const isToday = isSameDay(d, new Date());
-    const slot = STATE.meetingSlots[iso] || {};
-    return `
-    <div class="week-day meeting-day ${isToday?'today':''}">
-      <div class="wd-name">${DAY_SHORT[i]}</div>
-      <div class="wd-num mono">${d.getDate()}</div>
-      <input type="time" class="meeting-time-input" data-meeting-time="${iso}" value="${slot.time||''}">
-      <input type="text" class="meeting-with-input" data-meeting-with="${iso}" placeholder="¿Con quién?" value="${escapeHtml(slot.withWhom||'')}">
-    </div>`;
-  }).join('');
-  const summary = STATE.meetingSummaries[plannerWeekStart];
-
+  const list = [...STATE.meetingSummaries].sort((a,b)=>b.createdAt-a.createdAt);
   return `
   <div class="view-header">
     <div>
       <div class="view-title">Reunión</div>
-      <div class="view-sub">${wk.getDate()} ${MONTH_NAMES[wk.getMonth()].toLowerCase()} — ${weekEnd.getDate()} ${MONTH_NAMES[weekEnd.getMonth()].toLowerCase()}</div>
-    </div>
-    <div class="planner-toolbar">
-      <select class="select-pill" id="plannerUserFilter">
-        <option value="all" ${plannerFilter==='all'?'selected':''}>Todos</option>
-        ${Object.keys(USERS).map(k=>`<option value="${k}" ${plannerFilter===k?'selected':''}>${USERS[k].name}</option>`).join('')}
-      </select>
-      <div class="week-nav">
-        <button data-week-nav="-1">${icon('chevL')}</button>
-        ${plannerWeekStart === toISO(startOfWeek(new Date())) ?
-          `<span class="wn-label" style="cursor:default;color:var(--text-faint);">Semana actual</span>` :
-          `<button class="wn-today-btn" data-week-nav="0">${icon('zap')}<span>Volver a hoy</span></button>`
-        }
-        <button data-week-nav="1">${icon('chev')}</button>
-      </div>
-      <button class="btn-primary" id="plannerAddBtn">${icon('plus')}<span>To-do</span></button>
     </div>
   </div>
-  <div class="panel" style="margin-bottom:18px;">
-    <div class="panel-head"><div class="panel-title">${icon('comment')}Reunión</div></div>
-    <div class="week-strip">${meetingCols}</div>
-    <div class="meeting-summary-wrap">
-      <div class="pc-log-label">${icon('zap')}Resumen de reunión</div>
-      <textarea class="pc-log-input" data-meeting-summary="${plannerWeekStart}" placeholder="Anotá el resumen de la reunión de esta semana…">${escapeHtml(summary?summary.text:'')}</textarea>
-      ${summary && summary.text ? `<div class="pc-log-meta">${USERS[summary.updatedBy]?.name||''} · ${timeAgo(summary.updatedAt)}</div>` : ''}
+  <div class="sub-section">
+    <div class="sub-section-head">
+      <div class="sub-section-title">Resumen de reunión</div>
+      <button class="btn-primary" id="addMeetingSummaryBtn">${icon('plus')}<span>Agregar resumen</span></button>
     </div>
-  </div>
-  <div class="planner-board">${cols}</div>`;
+    ${list.length ? list.map(meetingSummaryRowHtml).join('') : emptyBig('comment','Todavía no hay resúmenes','Tocá "Agregar resumen" para anotar cómo vino la reunión.')}
+  </div>`;
+}
+function meetingSummaryModalHtml(s){
+  const isNew = !s;
+  return `
+  <div class="modal" id="meetingSummaryModal">
+    <div class="modal-header">
+      <div class="modal-title">${isNew?'Nuevo resumen de reunión':'Editar resumen'}</div>
+      <button class="icon-btn" data-close-modal>${icon('x')}</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Título</label><input type="text" id="msTitle" value="${s?escapeHtml(s.title):''}" placeholder="Ej. Reunión semanal"></div>
+      <div class="field"><label>Descripción</label><textarea id="msDesc" placeholder="Contá cómo vino la reunión…">${s?escapeHtml(s.description||''):''}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      ${!isNew?`<button class="btn-ghost" id="msDeleteBtn" style="color:var(--accent);margin-right:auto">Eliminar</button>`:''}
+      <button class="btn-secondary" data-close-modal>Cancelar</button>
+      <button class="btn-primary" id="msSaveBtn">${icon('check')}<span>${isNew?'Agregar':'Guardar cambios'}</span></button>
+    </div>
+  </div>`;
+}
+function openMeetingSummaryModal(id){
+  const s = id ? STATE.meetingSummaries.find(x=>x.id===id) : null;
+  const wrap = openModal(meetingSummaryModalHtml(s));
+  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModal));
+  const delBtn = document.getElementById('msDeleteBtn');
+  if(delBtn) delBtn.addEventListener('click', () => {
+    STATE.meetingSummaries = STATE.meetingSummaries.filter(x=>x.id!==s.id);
+    saveData(); closeModal(); renderApp(); toast('Resumen eliminado','trash');
+  });
+  document.getElementById('msSaveBtn').addEventListener('click', () => {
+    const title = document.getElementById('msTitle').value.trim();
+    if(!title){ toast('Ponele un título'); return; }
+    const description = document.getElementById('msDesc').value.trim();
+    const now = Date.now();
+    if(s){ s.title = title; s.description = description; s.updatedBy = PREFS.user; s.updatedAt = now; }
+    else STATE.meetingSummaries.push({ id:uid(), title, description, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    saveData(); closeModal(); renderApp(); toast(s?'Resumen actualizado':'Resumen agregado','check');
+  });
+  document.getElementById('msTitle').focus();
 }
 
 /* ===================== TAREAS ===================== */
@@ -1245,6 +1139,82 @@ function renderTopicDetail(topic){
   </div>`;
 }
 
+/* ===================== PUNTOS DE DOLOR RELEVADOS ===================== */
+function renderPainPoints(){
+  const byArea = {};
+  STATE.painPoints.forEach(p => { (byArea[p.area] = byArea[p.area]||[]).push(p); });
+  const areaNames = Object.keys(byArea).sort((a,b)=>a.localeCompare(b));
+  return `
+  <div class="view-header">
+    <div>
+      <div class="view-title">Puntos de dolor relevados</div>
+      <div class="view-sub">Relevamiento de problemas, agrupados por área</div>
+    </div>
+    <button class="btn-primary" id="addPainPointBtn">${icon('plus')}<span>Agregar punto de dolor</span></button>
+  </div>
+  ${areaNames.length ? areaNames.map(area => `
+    <div class="sub-section">
+      <div class="sub-section-title" style="margin-bottom:10px;">${escapeHtml(area)}</div>
+      <div class="task-list">
+        ${byArea[area].sort((a,b)=>b.createdAt-a.createdAt).map(p => `
+          <div class="task-row" data-open-painpoint="${p.id}">
+            <div style="flex:1;min-width:0">${descBullets(p.text)}</div>
+            <span class="row-meta" style="white-space:nowrap;">${USERS[p.createdBy]?.name||''} · ${timeAgo(p.createdAt)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`).join('') : emptyBig('activity','Todavía no hay puntos de dolor relevados','Tocá "Agregar punto de dolor" y sumá el primero por área.')}`;
+}
+function painPointModalHtml(p){
+  const isNew = !p;
+  const areaOptions = [...new Set(STATE.painPoints.map(x=>x.area))];
+  return `
+  <div class="modal" id="painPointModal">
+    <div class="modal-header">
+      <div class="modal-title">${isNew?'Nuevo punto de dolor':'Editar punto de dolor'}</div>
+      <button class="icon-btn" data-close-modal>${icon('x')}</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Área</label>
+        <input type="text" id="ppArea" list="ppAreaList" value="${p?escapeHtml(p.area):''}" placeholder="Ej. Operaciones">
+        <datalist id="ppAreaList">${areaOptions.map(a=>`<option value="${escapeHtml(a)}">`).join('')}</datalist>
+      </div>
+      <div class="field"><label>Punto de dolor</label><textarea id="ppText" placeholder="Describí el problema relevado…">${p?escapeHtml(p.text):''}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      ${!isNew?`<button class="btn-ghost" id="ppDeleteBtn" style="color:var(--accent);margin-right:auto">Eliminar</button>`:''}
+      <button class="btn-secondary" data-close-modal>Cancelar</button>
+      <button class="btn-primary" id="ppSaveBtn">${icon('check')}<span>${isNew?'Agregar':'Guardar cambios'}</span></button>
+    </div>
+  </div>`;
+}
+function openPainPointModal(id){
+  const p = id ? STATE.painPoints.find(x=>x.id===id) : null;
+  const wrap = openModal(painPointModalHtml(p));
+  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModal));
+  const delBtn = document.getElementById('ppDeleteBtn');
+  if(delBtn) delBtn.addEventListener('click', () => {
+    STATE.painPoints = STATE.painPoints.filter(x=>x.id!==p.id);
+    saveData(); closeModal(); renderApp(); toast('Punto de dolor eliminado','trash');
+  });
+  document.getElementById('ppSaveBtn').addEventListener('click', () => {
+    const area = document.getElementById('ppArea').value.trim();
+    const text = document.getElementById('ppText').value.trim();
+    if(!area){ toast('Ponele un área'); return; }
+    if(!text){ toast('Escribí el punto de dolor'); return; }
+    const now = Date.now();
+    if(p){ p.area = area; p.text = text; p.updatedBy = PREFS.user; p.updatedAt = now; }
+    else STATE.painPoints.push({ id:uid(), area, text, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    saveData(); closeModal(); renderApp(); toast(p?'Actualizado':'Punto de dolor agregado','check');
+  });
+  document.getElementById('ppArea').focus();
+}
+function bindPainPointsEvents(){
+  const addBtn = document.getElementById('addPainPointBtn');
+  if(addBtn) addBtn.addEventListener('click', () => openPainPointModal());
+  document.querySelectorAll('[data-open-painpoint]').forEach(el => el.addEventListener('click', () => openPainPointModal(el.dataset.openPainpoint)));
+}
+
 /* ===================== CONFIGURACIÓN ===================== */
 function renderSettings(){
   return `
@@ -1358,7 +1328,6 @@ function openTaskModal(taskId){
     if(e.target.closest('#mChecklistAddBtn')){ const inp=document.getElementById('mChecklistInput'); if(inp.value.trim()){ workingChecklist.push({id:uid(),text:inp.value.trim(),done:false}); inp.value=''; refreshChecklist(); } }
     if(e.target.closest('#mDeleteBtn') && task){
       STATE.tasks = STATE.tasks.filter(x=>x.id!==task.id);
-      STATE.todos.forEach(td => { if(td.linkedTaskId===task.id) td.linkedTaskId = null; });
       logActivity('task', `eliminó "${task.title}"`); saveData(); closeModal(); renderApp(); toast('Tarea eliminada','trash');
     }
     if(e.target.closest('#mSaveBtn')){
@@ -1435,6 +1404,7 @@ function viewHtml(){
     case 'planner': return renderPlanner();
     case 'tasks': return renderTasks();
     case 'topics': return renderTopics();
+    case 'painpoints': return renderPainPoints();
     case 'settings': return renderSettings();
     default: return renderDashboard();
   }
@@ -1588,149 +1558,14 @@ function bindViewEvents(){
   if(currentView === 'planner') bindPlannerEvents();
   if(currentView === 'tasks') bindTasksEvents();
   if(currentView === 'topics') bindTopicsEvents();
+  if(currentView === 'painpoints') bindPainPointsEvents();
   if(currentView === 'settings') bindSettingsEvents();
 }
 
 function bindPlannerEvents(){
-  const filter = document.getElementById('plannerUserFilter');
-  if(filter) filter.addEventListener('change', () => { plannerFilter = filter.value; renderApp(); });
-  document.querySelectorAll('[data-week-nav]').forEach(el => el.addEventListener('click', () => {
-    const v = el.dataset.weekNav;
-    if(v === '0') plannerWeekStart = toISO(startOfWeek(new Date()));
-    else plannerWeekStart = toISO(addDays(fromISO(plannerWeekStart), 7*Number(v)));
-    renderApp();
-  }));
-  const addBtn = document.getElementById('plannerAddBtn');
-  if(addBtn) addBtn.addEventListener('click', () => openTodoModal(todayISO()));
-  document.querySelectorAll('[data-add-todo-day]').forEach(el => el.addEventListener('click', () => openTodoModal(el.dataset.addTodoDay)));
-
-  document.querySelectorAll('[data-toggle-todo]').forEach(el => el.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const td = STATE.todos.find(x=>x.id===el.dataset.toggleTodo);
-    if(td){ td.done = !td.done; td.updatedBy = PREFS.user; td.updatedAt = Date.now(); saveData(); renderApp(); }
-  }));
-  document.querySelectorAll('[data-del-todo]').forEach(el => el.addEventListener('click', (e) => {
-    e.stopPropagation();
-    STATE.todos = STATE.todos.filter(x=>x.id!==el.dataset.delTodo);
-    saveData(); renderApp();
-  }));
-  document.querySelectorAll('[data-edit-todo]').forEach(el => el.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const td = STATE.todos.find(x=>x.id===el.dataset.editTodo);
-    if(td) openTodoModal(td.date, td);
-  }));
-
-  // Drag & drop de to-dos entre días
-  document.querySelectorAll('.todo-card').forEach(card => {
-    card.addEventListener('dragstart', (e) => {
-      if(e.target.closest('[data-toggle-todo],[data-del-todo],[data-open-task]')){ e.preventDefault(); return; }
-      card.classList.add('dragging');
-      e.dataTransfer.setData('text/plain', card.dataset.todoId);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    card.addEventListener('dragend', () => card.classList.remove('dragging'));
-  });
-  document.querySelectorAll('[data-drop-zone]').forEach(zone => {
-    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.closest('.planner-col').classList.add('dragover'); });
-    zone.addEventListener('dragleave', () => { zone.closest('.planner-col').classList.remove('dragover'); });
-    zone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      zone.closest('.planner-col').classList.remove('dragover');
-      const todoId = e.dataTransfer.getData('text/plain');
-      const td = STATE.todos.find(x=>x.id===todoId);
-      if(td){ td.date = zone.dataset.dropZone; td.updatedBy = PREFS.user; td.updatedAt = Date.now(); saveData(); renderApp(); }
-    });
-  });
-
-  // Actualización diaria ("qué hice hoy")
-  document.querySelectorAll('[data-log-day]').forEach(ta => {
-    let saveTimer;
-    ta.addEventListener('input', () => {
-      const iso = ta.dataset.logDay;
-      STATE.dailyLogs[iso] = { text: ta.value, updatedBy: PREFS.user, updatedAt: Date.now() };
-      clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ saveData(); }, 400);
-    });
-    ta.addEventListener('blur', () => { saveData(); });
-  });
-
-  // Reunión: hora y con quién por día, más resumen semanal
-  document.querySelectorAll('[data-meeting-time]').forEach(inp => {
-    inp.addEventListener('change', () => {
-      const iso = inp.dataset.meetingTime;
-      STATE.meetingSlots[iso] = STATE.meetingSlots[iso] || {};
-      STATE.meetingSlots[iso].time = inp.value;
-      STATE.meetingSlots[iso].updatedBy = PREFS.user;
-      STATE.meetingSlots[iso].updatedAt = Date.now();
-      saveData();
-    });
-  });
-  document.querySelectorAll('[data-meeting-with]').forEach(inp => {
-    let saveTimer;
-    inp.addEventListener('input', () => {
-      const iso = inp.dataset.meetingWith;
-      STATE.meetingSlots[iso] = STATE.meetingSlots[iso] || {};
-      STATE.meetingSlots[iso].withWhom = inp.value;
-      STATE.meetingSlots[iso].updatedBy = PREFS.user;
-      STATE.meetingSlots[iso].updatedAt = Date.now();
-      clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ saveData(); }, 400);
-    });
-    inp.addEventListener('blur', () => { saveData(); });
-  });
-  document.querySelectorAll('[data-meeting-summary]').forEach(ta => {
-    let saveTimer;
-    ta.addEventListener('input', () => {
-      const wk = ta.dataset.meetingSummary;
-      STATE.meetingSummaries[wk] = { text: ta.value, updatedBy: PREFS.user, updatedAt: Date.now() };
-      clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ saveData(); }, 400);
-    });
-    ta.addEventListener('blur', () => { saveData(); });
-  });
-}
-
-function openTodoModal(dateIso, existingTodo){
-  const openTasks = STATE.tasks.filter(t=>t.status!=='Hecha');
-  const td = existingTodo || null;
-  const wrap = openModal(`
-    <div class="modal" style="width:420px">
-      <div class="modal-header"><div class="modal-title">${td?'Editar to-do':'Nuevo to-do'}</div><button class="icon-btn" data-close-modal>${icon('x')}</button></div>
-      <div class="modal-body">
-        <div class="field"><label>¿Qué hay que hacer?</label><input type="text" id="todoTextInput" placeholder="Ej. Mandar el mail a Apex Group" value="${td?escapeHtml(td.text):''}"></div>
-        <div class="field">
-          <label>Vincular a una tarea (opcional)</label>
-          <select id="todoLinkSelect">
-            <option value="">Sin vincular</option>
-            ${openTasks.map(t=>`<option value="${t.id}" ${td&&td.linkedTaskId===t.id?'selected':''}>${escapeHtml(t.title)}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        ${td?`<button class="btn-ghost" id="todoDeleteBtn" style="color:var(--accent);margin-right:auto">Eliminar</button>`:''}
-        <button class="btn-secondary" data-close-modal>Cancelar</button>
-        <button class="btn-primary" id="todoSaveBtn">${icon('check')}<span>${td?'Guardar cambios':'Agregar'}</span></button>
-      </div>
-    </div>`);
-  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModal));
-  const deleteBtn = document.getElementById('todoDeleteBtn');
-  if(deleteBtn) deleteBtn.addEventListener('click', () => {
-    STATE.todos = STATE.todos.filter(x=>x.id!==td.id);
-    saveData(); closeModal(); renderApp(); toast('To-do eliminado','trash');
-  });
-  const submit = () => {
-    const text = document.getElementById('todoTextInput').value.trim();
-    if(!text){ toast('Escribí el to-do'); return; }
-    const linkedTaskId = document.getElementById('todoLinkSelect').value || null;
-    if(td){
-      td.text = text; td.linkedTaskId = linkedTaskId; td.updatedBy = PREFS.user; td.updatedAt = Date.now();
-      saveData(); closeModal(); renderApp(); toast('To-do actualizado','check');
-    } else {
-      const now = Date.now();
-      STATE.todos.push({ id:uid(), text, date:dateIso, done:false, linkedTaskId, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
-      saveData(); closeModal(); renderApp(); toast('To-do agregado','check');
-    }
-  };
-  document.getElementById('todoSaveBtn').addEventListener('click', submit);
-  document.getElementById('todoTextInput').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); submit(); } });
-  document.getElementById('todoTextInput').focus();
+  const addBtn = document.getElementById('addMeetingSummaryBtn');
+  if(addBtn) addBtn.addEventListener('click', () => openMeetingSummaryModal());
+  document.querySelectorAll('[data-open-summary]').forEach(el => el.addEventListener('click', () => openMeetingSummaryModal(el.dataset.openSummary)));
 }
 
 function openDayModal(iso){
@@ -1962,10 +1797,8 @@ function startFirebaseSync(){
       if(res && res.value && res.value !== lastSeen){
         lastSeen = res.value;
         STATE = JSON.parse(res.value);
-        if(!STATE.dailyLogs) STATE.dailyLogs = {};
-        if(!STATE.todos) STATE.todos = [];
-        if(!STATE.meetingSlots) STATE.meetingSlots = {};
-        if(!STATE.meetingSummaries) STATE.meetingSummaries = {};
+        if(!STATE.meetingSummaries) STATE.meetingSummaries = [];
+        if(!STATE.painPoints) STATE.painPoints = [];
         if(STATE.users && Object.keys(STATE.users).length) USERS = STATE.users;
         renderApp();
       }
@@ -1976,10 +1809,8 @@ function startFirebaseSync(){
 async function initApp(){
   await loadData();
   if(!STATE || !STATE.tasks) STATE = defaultData();
-  if(!STATE.dailyLogs) STATE.dailyLogs = {};
-  if(!STATE.todos) STATE.todos = [];
-  if(!STATE.meetingSlots) STATE.meetingSlots = {};
-  if(!STATE.meetingSummaries) STATE.meetingSummaries = {};
+  if(!STATE.meetingSummaries) STATE.meetingSummaries = [];
+  if(!STATE.painPoints) STATE.painPoints = [];
   if(!STATE.users || !Object.keys(STATE.users).length){ STATE.users = JSON.parse(JSON.stringify(USERS)); saveData(); }
   USERS = STATE.users;
   migrateTopics();
