@@ -560,6 +560,12 @@ const DAY_SHORT = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const PRIORITIES = { alta: { label: 'Alta', cls: 'pill-high' }, media: { label: 'Media', cls: 'pill-med' }, baja: { label: 'Baja', cls: 'pill-low' } };
 const STATUSES = ['Pendiente', 'En curso', 'Bloqueada', 'Hecha'];
+const STATUS_STYLES = {
+  'Pendiente': { bg: 'var(--surface-2)', color: 'var(--text-muted)' },
+  'En curso': { bg: 'var(--warn-soft)', color: 'var(--warn)' },
+  'Bloqueada': { bg: 'var(--accent-soft)', color: 'var(--accent)' },
+  'Hecha': { bg: 'var(--success-soft)', color: 'var(--success)' },
+};
 const TOPIC_COLORS = ['#AB1930', '#9A8E7D', '#4C7A5E', '#B8863A', '#3D3D3D', '#6E7FA8'];
 
 /* ---------- Icon set (stroke, minimal) ---------- */
@@ -1244,6 +1250,9 @@ function renderPainPoints(){
   ${areaIds.length ? areaIds.map(areaId => {
     const PRIO_RANK = { alta:0, media:1, baja:2 };
     const points = byArea[areaId].slice().sort((a,b) => {
+      const aDone = (a.status||'Pendiente')==='Hecha' ? 1 : 0;
+      const bDone = (b.status||'Pendiente')==='Hecha' ? 1 : 0;
+      if(aDone !== bDone) return aDone - bDone;
       const r = PRIO_RANK[a.priority||'media'] - PRIO_RANK[b.priority||'media'];
       return r !== 0 ? r : b.createdAt-a.createdAt;
     });
@@ -1253,6 +1262,7 @@ function renderPainPoints(){
       <div class="task-list">
         ${points.map(p => {
           const prio = PRIORITIES[p.priority||'media'];
+          const statusStyle = STATUS_STYLES[p.status||'Pendiente'];
           return `
           <div class="task-row" data-open-painpoint="${p.id}">
             <div style="flex:1;min-width:0">
@@ -1265,7 +1275,7 @@ function renderPainPoints(){
               </div>` : ''}
             </div>
             <span class="pill ${prio.cls}"><span class="pill-dot"></span>${prio.label}</span>
-            <span class="tag">${p.status||'Pendiente'}</span>
+            <span class="tag" style="background:${statusStyle.bg};color:${statusStyle.color};border-color:transparent;">${p.status||'Pendiente'}</span>
             <span class="row-meta" style="white-space:nowrap;">${USERS[p.createdBy]?.name||''} · ${timeAgo(p.createdAt)}</span>
           </div>`;
         }).join('')}
