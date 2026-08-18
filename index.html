@@ -1255,7 +1255,15 @@ function renderPainPoints(){
           const prio = PRIORITIES[p.priority||'media'];
           return `
           <div class="task-row" data-open-painpoint="${p.id}">
-            <div style="flex:1;min-width:0">${descBullets(p.text)}</div>
+            <div style="flex:1;min-width:0">
+              ${descBullets(p.text)}
+              ${(p.comments&&p.comments.length) ? `
+              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;color:var(--text-muted);">
+                ${icon('comment')}
+                <span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.comments[p.comments.length-1].text)}</span>
+                ${p.comments.length>1 ? `<span class="row-meta">+${p.comments.length-1}</span>` : ''}
+              </div>` : ''}
+            </div>
             <span class="pill ${prio.cls}"><span class="pill-dot"></span>${prio.label}</span>
             <span class="tag">${p.status||'Pendiente'}</span>
             <span class="row-meta" style="white-space:nowrap;">${USERS[p.createdBy]?.name||''} · ${timeAgo(p.createdAt)}</span>
@@ -1315,7 +1323,7 @@ function painPointModalHtml(p){
 function openPainPointModal(id){
   const p = id ? STATE.painPoints.find(x=>x.id===id) : null;
   const wrap = openModal(painPointModalHtml(p));
-  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModal));
+  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', () => { closeModal(); renderApp(); }));
   const delBtn = document.getElementById('ppDeleteBtn');
   if(delBtn) delBtn.addEventListener('click', () => {
     STATE.painPoints = STATE.painPoints.filter(x=>x.id!==p.id);
