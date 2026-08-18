@@ -504,6 +504,15 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 .tag-input-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
 .tag-x{cursor:pointer;margin-left:3px;opacity:.6;}
 .tag-x:hover{opacity:1;}
+.comment-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft);}
+.comment-item:last-child{border-bottom:none;}
+.comment-body{flex:1;}
+.comment-head{display:flex;align-items:center;gap:8px;margin-bottom:3px;}
+.comment-author{font-size:12.5px;font-weight:700;}
+.comment-time{font-size:11px;color:var(--text-faint);}
+.comment-text{font-size:13px;white-space:pre-wrap;}
+.comment-input-row{display:flex;gap:8px;margin-top:10px;}
+.comment-input-row input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-size:13px;outline:none;}
 
 @media (max-width:1100px){
   .dash-grid{grid-template-columns:repeat(2,1fr);}
@@ -1276,6 +1285,24 @@ function painPointModalHtml(p){
         <div class="field"><label>Prioridad</label><select id="ppPriority">${Object.entries(PRIORITIES).map(([k,v])=>`<option value="${k}" ${(p?p.priority:'media')===k?'selected':''}>${v.label}</option>`).join('')}</select></div>
         <div class="field"><label>Estado</label><select id="ppStatus">${STATUSES.map(s=>`<option ${(p?p.status:'Pendiente')===s?'selected':''}>${s}</option>`).join('')}</select></div>
       </div>
+      ${!isNew ? `
+      <div class="field">
+        <label>Comentarios</label>
+        <div id="ppCommentsList">
+          ${(p.comments||[]).map(c=>`
+            <div class="comment-item">
+              ${userChip(c.author,24)}
+              <div class="comment-body">
+                <div class="comment-head"><span class="comment-author">${USERS[c.author]?.name||''}</span><span class="comment-time">${timeAgo(c.date)}</span></div>
+                <div class="comment-text">${escapeHtml(c.text)}</div>
+              </div>
+            </div>`).join('') || `<div class="es" style="color:var(--text-faint);font-size:12.5px;">Todavía no hay comentarios.</div>`}
+        </div>
+        <div class="comment-input-row">
+          <input type="text" id="ppCommentInput" placeholder="Escribir un comentario…">
+          <button class="btn-secondary" id="ppCommentBtn">Comentar</button>
+        </div>
+      </div>` : ''}
     </div>
     <div class="modal-footer">
       ${!isNew?`<button class="btn-ghost" id="ppDeleteBtn" style="color:var(--accent);margin-right:auto">Eliminar</button>`:''}
@@ -1293,6 +1320,17 @@ function openPainPointModal(id){
     STATE.painPoints = STATE.painPoints.filter(x=>x.id!==p.id);
     saveData(); closeModal(); renderApp(); toast('Punto de dolor eliminado','trash');
   });
+  const commentBtn = document.getElementById('ppCommentBtn');
+  if(commentBtn) commentBtn.addEventListener('click', () => {
+    const inp = document.getElementById('ppCommentInput');
+    if(inp.value.trim()){
+      p.comments = p.comments || [];
+      p.comments.push({ id:uid(), author:PREFS.user, text:inp.value.trim(), date:Date.now() });
+      saveData(); closeModal(); openPainPointModal(p.id);
+    }
+  });
+  const commentInput = document.getElementById('ppCommentInput');
+  if(commentInput) commentInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); document.getElementById('ppCommentBtn').click(); } });
   document.getElementById('ppSaveBtn').addEventListener('click', () => {
     const areaName = document.getElementById('ppArea').value.trim();
     const text = document.getElementById('ppText').value.trim();
