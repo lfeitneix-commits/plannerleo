@@ -1296,6 +1296,7 @@ function painPointModalHtml(p){
                 <div class="comment-head"><span class="comment-author">${USERS[c.author]?.name||''}</span><span class="comment-time">${timeAgo(c.date)}</span></div>
                 <div class="comment-text">${escapeHtml(c.text)}</div>
               </div>
+              <span class="tag-x" data-del-comment="${c.id}" style="flex-shrink:0;align-self:flex-start;margin-top:3px;">${ICN.x}</span>
             </div>`).join('') || `<div class="es" style="color:var(--text-faint);font-size:12.5px;">Todavía no hay comentarios.</div>`}
         </div>
         <div class="comment-input-row">
@@ -1331,6 +1332,10 @@ function openPainPointModal(id){
   });
   const commentInput = document.getElementById('ppCommentInput');
   if(commentInput) commentInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); document.getElementById('ppCommentBtn').click(); } });
+  wrap.querySelectorAll('[data-del-comment]').forEach(el => el.addEventListener('click', () => {
+    p.comments = (p.comments||[]).filter(c=>c.id!==el.dataset.delComment);
+    saveData(); closeModal(); openPainPointModal(p.id);
+  }));
   document.getElementById('ppSaveBtn').addEventListener('click', () => {
     const areaName = document.getElementById('ppArea').value.trim();
     const text = document.getElementById('ppText').value.trim();
