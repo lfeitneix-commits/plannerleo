@@ -1003,6 +1003,7 @@ function openCalendarDayModal(iso){
   wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', () => { closeModal(); renderApp(); }));
   wrap.querySelectorAll('[data-del-event]').forEach(el => el.addEventListener('click', () => {
     STATE.calendarEvents = STATE.calendarEvents.filter(x=>x.id!==el.dataset.delEvent);
+    STATE.meetingSummaries = STATE.meetingSummaries.filter(s=>s.eventId!==el.dataset.delEvent);
     saveData(); closeModal(); openCalendarDayModal(iso);
   }));
   const add = () => {
@@ -1011,9 +1012,10 @@ function openCalendarDayModal(iso){
     const time = document.getElementById('evTime').value;
     const summary = document.getElementById('evSummary').value.trim();
     const now = Date.now();
-    STATE.calendarEvents.push({ id:uid(), date:iso, title, time, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    const eventId = uid();
+    STATE.calendarEvents.push({ id:eventId, date:iso, title, time, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
     if(summary){
-      STATE.meetingSummaries.push({ id:uid(), date:iso, title, description:summary, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+      STATE.meetingSummaries.push({ id:uid(), eventId, date:iso, title, description:summary, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
     }
     saveData(); closeModal(); openCalendarDayModal(iso);
   };
