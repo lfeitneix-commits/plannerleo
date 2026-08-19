@@ -993,6 +993,7 @@ function calendarDayModalHtml(iso){
         <div class="field" style="flex:2;margin-bottom:0;"><label>Evento</label><input type="text" id="evTitle" placeholder="Ej. Reunión con Apex Group"></div>
         <div class="field" style="flex:1;margin-bottom:0;"><label>Hora (opcional)</label><input type="time" id="evTime"></div>
       </div>
+      <div class="field" style="margin-top:10px;"><label>Resumen (opcional)</label><textarea id="evSummary" placeholder="Si ya sabés cómo va a venir, o querés dejar algo anotado…"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn-secondary" data-close-modal>Cerrar</button><button class="btn-primary" id="evAddBtn">${icon('plus')}<span>Agregar evento</span></button></div>
   </div>`;
@@ -1008,8 +1009,12 @@ function openCalendarDayModal(iso){
     const title = document.getElementById('evTitle').value.trim();
     if(!title){ toast('Ponele un título al evento'); return; }
     const time = document.getElementById('evTime').value;
+    const summary = document.getElementById('evSummary').value.trim();
     const now = Date.now();
     STATE.calendarEvents.push({ id:uid(), date:iso, title, time, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    if(summary){
+      STATE.meetingSummaries.push({ id:uid(), date:iso, title, description:summary, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    }
     saveData(); closeModal(); openCalendarDayModal(iso);
   };
   document.getElementById('evAddBtn').addEventListener('click', add);
@@ -1017,7 +1022,10 @@ function openCalendarDayModal(iso){
   document.getElementById('evTitle').focus();
 }
 function renderPlanner(){
-  const list = [...STATE.meetingSummaries].sort((a,b)=>b.createdAt-a.createdAt);
+  const weekEndIso = toISO(addDays(fromISO(calendarWeekStart), 6));
+  const list = STATE.meetingSummaries
+    .filter(s => (s.date||calendarWeekStart) >= calendarWeekStart && (s.date||calendarWeekStart) <= weekEndIso)
+    .sort((a,b)=>b.createdAt-a.createdAt);
   return `
   <div class="view-header">
     <div>
@@ -1030,7 +1038,7 @@ function renderPlanner(){
       <div class="sub-section-title">Resumen de reunión</div>
       <button class="btn-primary" id="addMeetingSummaryBtn">${icon('plus')}<span>Agregar resumen</span></button>
     </div>
-    ${list.length ? list.map(meetingSummaryRowHtml).join('') : emptyBig('comment','Todavía no hay resúmenes','Tocá "Agregar resumen" para anotar cómo vino la reunión.')}
+    ${list.length ? list.map(meetingSummaryRowHtml).join('') : emptyBig('comment','Todavía no hay resúmenes esta semana','Tocá "Agregar resumen" o agregá uno directo desde un evento del calendario.')}
   </div>`;
 }
 function meetingSummaryModalHtml(s){
@@ -1067,7 +1075,7 @@ function openMeetingSummaryModal(id){
     const description = document.getElementById('msDesc').value.trim();
     const now = Date.now();
     if(s){ s.title = title; s.description = description; s.updatedBy = PREFS.user; s.updatedAt = now; }
-    else STATE.meetingSummaries.push({ id:uid(), title, description, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    else STATE.meetingSummaries.push({ id:uid(), date:calendarWeekStart, title, description, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
     saveData(); closeModal(); renderApp(); toast(s?'Resumen actualizado':'Resumen agregado','check');
   });
   document.getElementById('msTitle').focus();
@@ -1958,19 +1966,25 @@ function migrateTopics(){
 /* Versiones viejas guardaban meetingSummaries como objeto {semana: {text,...}} en vez de lista.
    Si encuentra ese formato lo convierte a la lista nueva en vez de descartarlo. */
 function migrateMeetingSummaries(){
+  let migrated = false;
   if(STATE.meetingSummaries && !Array.isArray(STATE.meetingSummaries)){
     const now = Date.now();
     STATE.meetingSummaries = Object.entries(STATE.meetingSummaries)
       .filter(([,v]) => v && v.text && v.text.trim())
       .map(([weekIso, v]) => ({
-        id: uid(), title: `Reunión ${fmtDateShort(weekIso)}`, description: v.text,
+        id: uid(), date: weekIso, title: `Reunión ${fmtDateShort(weekIso)}`, description: v.text,
         createdBy: v.updatedBy || PREFS.user, updatedBy: v.updatedBy || PREFS.user,
         createdAt: v.updatedAt || now, updatedAt: v.updatedAt || now,
       }));
-    saveData();
+    migrated = true;
   } else if(!STATE.meetingSummaries){
     STATE.meetingSummaries = [];
   }
+  // Resúmenes guardados antes de que existiera la fecha: se anclan a la semana en la que se crearon.
+  STATE.meetingSummaries.forEach(s => {
+    if(!s.date){ s.date = toISO(startOfWeek(new Date(s.createdAt||Date.now()))); migrated = true; }
+  });
+  if(migrated) saveData();
   delete STATE.meetingSlots;
   delete STATE.dailyLogs;
   delete STATE.todos;
