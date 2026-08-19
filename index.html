@@ -567,6 +567,23 @@ const STATUS_STYLES = {
   'Hecha': { bg: 'var(--success-soft)', color: 'var(--success)' },
 };
 const TOPIC_COLORS = ['#AB1930', '#9A8E7D', '#4C7A5E', '#B8863A', '#3D3D3D', '#6E7FA8'];
+const RECURRENCE_OPTIONS = [
+  { value:'none', label:'No se repite' },
+  { value:'weekly', label:'Todas las semanas', short:'semanal' },
+  { value:'biweekly', label:'Cada 2 semanas', short:'cada 2 sem' },
+  { value:'every3', label:'Cada 3 semanas', short:'cada 3 sem' },
+  { value:'every4', label:'Cada 4 semanas', short:'cada 4 sem' },
+];
+const RECURRENCE_DAYS = { weekly:7, biweekly:14, every3:21, every4:28 };
+function eventsOnDate(iso){
+  return STATE.calendarEvents.filter(e => {
+    if(e.date === iso) return true;
+    const interval = RECURRENCE_DAYS[e.recurrence];
+    if(!interval) return false;
+    const diffDays = Math.round((fromISO(iso) - fromISO(e.date)) / 86400000);
+    return diffDays > 0 && diffDays % interval === 0;
+  });
+}
 
 /* ---------- Icon set (stroke, minimal) ---------- */
 const ICN = {
@@ -952,11 +969,11 @@ function renderMeetingsCalendar(){
     const d = addDays(wk, i);
     const iso = toISO(d);
     const isToday = isSameDay(d, new Date());
-    const dayEvents = STATE.calendarEvents.filter(e=>e.date===iso).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+    const dayEvents = eventsOnDate(iso).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
     return `
     <div class="cal-cell ${isToday?'today':''}" style="min-height:150px;" data-cal-day="${iso}">
       <div class="cal-num">${d.getDate()}</div>
-      ${dayEvents.map(e=>`<div class="cal-event">${e.time?escapeHtml(e.time)+' ':''}${escapeHtml(e.title)}</div>`).join('')}
+      ${dayEvents.map(e=>`<div class="cal-event">${e.time?escapeHtml(e.time)+' ':''}${escapeHtml(e.title)}${e.recurrence&&e.recurrence!=='none'?` ↻`:''}</div>`).join('')}
     </div>`;
   }).join('');
   return `
@@ -976,23 +993,23 @@ function renderMeetingsCalendar(){
   </div>`;
 }
 function calendarDayModalHtml(iso){
-  const events = STATE.calendarEvents.filter(e=>e.date===iso).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  const events = eventsOnDate(iso).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
   return `
   <div class="modal" style="width:420px">
     <div class="modal-header"><div class="modal-title" style="text-transform:capitalize">${fmtDateLong(iso)}</div><button class="icon-btn" data-close-modal>${icon('x')}</button></div>
     <div class="modal-body">
       <div class="checklist-mini" id="calEventsWrap">
         ${events.length ? events.map(e=>`
-          <div class="cl-row">
+          <div class="cl-row" data-open-event="${e.id}" style="cursor:pointer;">
             <span class="row-meta" style="min-width:44px;">${e.time||''}</span>
-            <span class="cl-text" style="flex:1;">${escapeHtml(e.title)}</span>
-            <span class="tag-x" data-del-event="${e.id}">${ICN.x}</span>
+            <span class="cl-text" style="flex:1;">${escapeHtml(e.title)}${e.recurrence&&e.recurrence!=='none'?` <span class="row-meta">↻ ${RECURRENCE_OPTIONS.find(r=>r.value===e.recurrence)?.short||''}</span>`:''}</span>
           </div>`).join('') : `<div class="es" style="color:var(--text-faint);font-size:12.5px;">Sin eventos este día.</div>`}
       </div>
       <div class="field-row" style="margin-top:14px;">
         <div class="field" style="flex:2;margin-bottom:0;"><label>Evento</label><input type="text" id="evTitle" placeholder="Ej. Reunión con Apex Group"></div>
         <div class="field" style="flex:1;margin-bottom:0;"><label>Hora (opcional)</label><input type="time" id="evTime"></div>
       </div>
+      <div class="field" style="margin-top:10px;"><label>Se repite</label><select id="evRecurrence">${RECURRENCE_OPTIONS.map(r=>`<option value="${r.value}">${r.label}</option>`).join('')}</select></div>
       <div class="field" style="margin-top:10px;"><label>Resumen (opcional)</label><textarea id="evSummary" placeholder="Si ya sabés cómo va a venir, o querés dejar algo anotado…"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn-secondary" data-close-modal>Cerrar</button><button class="btn-primary" id="evAddBtn">${icon('plus')}<span>Agregar evento</span></button></div>
@@ -1001,19 +1018,16 @@ function calendarDayModalHtml(iso){
 function openCalendarDayModal(iso){
   const wrap = openModal(calendarDayModalHtml(iso));
   wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', () => { closeModal(); renderApp(); }));
-  wrap.querySelectorAll('[data-del-event]').forEach(el => el.addEventListener('click', () => {
-    STATE.calendarEvents = STATE.calendarEvents.filter(x=>x.id!==el.dataset.delEvent);
-    STATE.meetingSummaries = STATE.meetingSummaries.filter(s=>s.eventId!==el.dataset.delEvent);
-    saveData(); closeModal(); openCalendarDayModal(iso);
-  }));
+  wrap.querySelectorAll('[data-open-event]').forEach(el => el.addEventListener('click', () => openEventDetailModal(el.dataset.openEvent, iso)));
   const add = () => {
     const title = document.getElementById('evTitle').value.trim();
     if(!title){ toast('Ponele un título al evento'); return; }
     const time = document.getElementById('evTime').value;
+    const recurrence = document.getElementById('evRecurrence').value;
     const summary = document.getElementById('evSummary').value.trim();
     const now = Date.now();
     const eventId = uid();
-    STATE.calendarEvents.push({ id:eventId, date:iso, title, time, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+    STATE.calendarEvents.push({ id:eventId, date:iso, title, time, recurrence, comments:[], createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
     if(summary){
       STATE.meetingSummaries.push({ id:uid(), eventId, date:iso, title, description:summary, createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
     }
@@ -1022,6 +1036,78 @@ function openCalendarDayModal(iso){
   document.getElementById('evAddBtn').addEventListener('click', add);
   document.getElementById('evTitle').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); add(); } });
   document.getElementById('evTitle').focus();
+}
+function eventDetailModalHtml(e){
+  return `
+  <div class="modal" id="eventDetailModal" style="width:440px">
+    <div class="modal-header">
+      <div class="modal-title" style="text-transform:capitalize">${fmtDateLong(e.date)}</div>
+      <button class="icon-btn" data-close-modal>${icon('x')}</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field" style="flex:2;"><label>Evento</label><input type="text" id="edTitle" value="${escapeHtml(e.title)}"></div>
+        <div class="field" style="flex:1;"><label>Hora</label><input type="time" id="edTime" value="${e.time||''}"></div>
+      </div>
+      <div class="field"><label>Se repite</label><select id="edRecurrence">${RECURRENCE_OPTIONS.map(r=>`<option value="${r.value}" ${e.recurrence===r.value?'selected':''}>${r.label}</option>`).join('')}</select></div>
+      <div class="field">
+        <label>Comentarios</label>
+        <div id="edCommentsList">
+          ${(e.comments||[]).map(c=>`
+            <div class="comment-item">
+              ${userChip(c.author,24)}
+              <div class="comment-body">
+                <div class="comment-head"><span class="comment-author">${USERS[c.author]?.name||''}</span><span class="comment-time">${timeAgo(c.date)}</span></div>
+                <div class="comment-text">${escapeHtml(c.text)}</div>
+              </div>
+              <span class="tag-x" data-del-event-comment="${c.id}" style="flex-shrink:0;align-self:flex-start;margin-top:3px;">${ICN.x}</span>
+            </div>`).join('') || `<div class="es" style="color:var(--text-faint);font-size:12.5px;">Todavía no hay comentarios.</div>`}
+        </div>
+        <div class="comment-input-row">
+          <input type="text" id="edCommentInput" placeholder="Escribir un comentario…">
+          <button class="btn-secondary" id="edCommentBtn">Comentar</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="edDeleteBtn" style="color:var(--accent);margin-right:auto">Eliminar</button>
+      <button class="btn-secondary" data-close-modal>Cancelar</button>
+      <button class="btn-primary" id="edSaveBtn">${icon('check')}<span>Guardar cambios</span></button>
+    </div>
+  </div>`;
+}
+function openEventDetailModal(id, iso){
+  const e = STATE.calendarEvents.find(x=>x.id===id);
+  if(!e) return;
+  const wrap = openModal(eventDetailModalHtml(e));
+  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', () => { closeModal(); openCalendarDayModal(iso); }));
+  document.getElementById('edDeleteBtn').addEventListener('click', () => {
+    STATE.calendarEvents = STATE.calendarEvents.filter(x=>x.id!==e.id);
+    STATE.meetingSummaries = STATE.meetingSummaries.filter(s=>s.eventId!==e.id);
+    saveData(); closeModal(); openCalendarDayModal(iso); toast('Reunión eliminada','trash');
+  });
+  document.getElementById('edSaveBtn').addEventListener('click', () => {
+    const title = document.getElementById('edTitle').value.trim();
+    if(!title){ toast('Ponele un título'); return; }
+    e.title = title;
+    e.time = document.getElementById('edTime').value;
+    e.recurrence = document.getElementById('edRecurrence').value;
+    e.updatedBy = PREFS.user; e.updatedAt = Date.now();
+    saveData(); closeModal(); openCalendarDayModal(iso); toast('Reunión actualizada','check');
+  });
+  document.getElementById('edCommentBtn').addEventListener('click', () => {
+    const inp = document.getElementById('edCommentInput');
+    if(inp.value.trim()){
+      e.comments = e.comments || [];
+      e.comments.push({ id:uid(), author:PREFS.user, text:inp.value.trim(), date:Date.now() });
+      saveData(); closeModal(); openEventDetailModal(id, iso);
+    }
+  });
+  document.getElementById('edCommentInput').addEventListener('keydown', ev => { if(ev.key==='Enter'){ ev.preventDefault(); document.getElementById('edCommentBtn').click(); } });
+  wrap.querySelectorAll('[data-del-event-comment]').forEach(el => el.addEventListener('click', () => {
+    e.comments = (e.comments||[]).filter(c=>c.id!==el.dataset.delEventComment);
+    saveData(); closeModal(); openEventDetailModal(id, iso);
+  }));
 }
 function renderPlanner(){
   const weekEndIso = toISO(addDays(fromISO(calendarWeekStart), 6));
