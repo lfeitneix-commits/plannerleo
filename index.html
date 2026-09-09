@@ -349,20 +349,6 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 .reminder-text{font-size:13px;flex:1;}
 .reminder-date{font-size:11px;font-family:'DM Mono',monospace;color:var(--text-faint);}
 
-/* tasks view */
-.tasks-toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
-.seg{display:flex;background:var(--surface);border:1px solid var(--border-soft);border-radius:11px;padding:3px;}
-.seg-btn{padding:7px 13px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-muted);}
-.seg-btn.active{background:var(--accent);color:#fff;}
-.seg-count{
-  display:inline-flex;align-items:center;justify-content:center;margin-left:7px;min-width:19px;height:19px;padding:0 5px;
-  border-radius:20px;font-family:'DM Mono',monospace;font-size:10.5px;background:var(--surface-2);color:var(--text-muted);
-}
-.seg-btn.active .seg-count{background:rgba(255,255,255,.25);color:#fff;}
-.select-pill{
-  padding:8px 12px;border-radius:10px;border:1px solid var(--border-soft);background:var(--surface);
-  font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;
-}
 .task-list{display:flex;flex-direction:column;gap:8px;}
 .task-row{
   background:var(--surface);border:1px solid var(--border-soft);border-radius:13px;padding:13px 16px;
@@ -370,17 +356,9 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 }
 .task-row:hover{box-shadow:var(--shadow-sm);border-color:var(--text-faint);}
 .tr-title{font-weight:600;font-size:13.5px;}
-.tr-tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
 .desc-text{font-size:12.5px;color:var(--text-muted);margin-top:4px;line-height:1.5;}
 .desc-list{font-size:12.5px;color:var(--text-muted);margin:4px 0 0;padding-left:18px;line-height:1.6;}
 .desc-list li{margin-bottom:1px;}
-.board-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
-.board-col{background:var(--surface-2);border-radius:16px;padding:12px;min-height:200px;}
-.board-col-head{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);padding:4px 6px 12px;display:flex;justify-content:space-between;}
-.board-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:11px;padding:10px 11px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s;}
-.board-card:hover{box-shadow:var(--shadow-sm);}
-.tc-title{font-size:12.5px;font-weight:600;flex:1;line-height:1.35;}
-.tc-meta{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
 
 /* calendar */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
@@ -517,16 +495,12 @@ html.dark .toast{background:var(--surface);border:1px solid var(--border);color:
 @media (max-width:1100px){
   .dash-grid{grid-template-columns:repeat(2,1fr);}
   .dash-cols{grid-template-columns:1fr;}
-  .planner-board{grid-template-columns:repeat(4,1fr);}
-  .board-cols{grid-template-columns:repeat(2,1fr);}
   .settings-grid{grid-template-columns:1fr;}
 }
 @media (max-width:760px){
   :root{--sidebar-w:0px;}
   .sidebar{position:fixed;z-index:80;height:100vh;transform:translateX(-100%);transition:transform .25s ease;}
   .sidebar.open{transform:translateX(0);}
-  .planner-board{grid-template-columns:repeat(2,1fr);}
-  .board-cols{grid-template-columns:1fr;}
   .dash-grid{grid-template-columns:repeat(2,1fr);}
   .notes-layout{grid-template-columns:1fr;}
   .notes-tree{display:none;}
@@ -680,7 +654,6 @@ function toast(msg, icn){
 let STATE = null;
 let PREFS = null;
 let currentView = 'dashboard';
-let taskFilters = { status: 'all', priority: 'all', assignee: 'all', view: 'list', tab: 'active' };
 let topicsActiveId = null;
 let calendarWeekStart = toISO(startOfWeek(new Date()));
 let searchQuery = '';
@@ -689,7 +662,6 @@ let saveTimer = null;
 function defaultData(){
   const now = Date.now();
   return {
-    tasks: [],
     notes: [
       { id:'n1', parentId:null, title:'Bienvenida a Neix', contentHtml:'<h2>Neix</h2><p>Este es el espacio de trabajo compartido del equipo. Usá esta página como punto de partida — creá sub-páginas para cada tema, proyecto o reunión.</p><ul><li>Escribí libremente, el formato se guarda automáticamente.</li><li>Usá <b>checklists</b> para pendientes rápidos.</li><li>Insertá tablas para comparativos.</li></ul>', comments:[], createdBy:'leo', updatedBy:'leo', createdAt:now, updatedAt:now, favorite:true },
     ],
@@ -786,16 +758,14 @@ function touch(obj){ obj.updatedBy = PREFS.user; obj.updatedAt = Date.now(); }
 
 /* ===================== SHELL: SIDEBAR + TOPBAR ===================== */
 function navCounts(){
-  const pendingTasks = STATE.tasks.filter(t => t.status !== 'Hecha').length;
   const topicsCount = STATE.topics.length;
-  return { pendingTasks, topicsCount };
+  return { topicsCount };
 }
 function renderSidebar(){
   const c = navCounts();
   const items = [
     { id:'dashboard', label:'Inicio', icon:'dashboard' },
     { id:'planner', label:'Reuniones', icon:'planner' },
-    { id:'tasks', label:'Tareas', icon:'tasks', count:c.pendingTasks },
     { id:'topics', label:'Proyectos', icon:'topics', count:c.topicsCount },
     { id:'painpoints', label:'Puntos de dolor relevados', icon:'activity' },
   ];
@@ -841,21 +811,20 @@ function renderSidebar(){
 function globalSearchResults(q){
   if(!q || q.trim().length < 1) return null;
   const query = q.toLowerCase();
-  const tasks = STATE.tasks.filter(t => t.title.toLowerCase().includes(query)).slice(0,5);
   const topics = STATE.topics.filter(t =>
     t.title.toLowerCase().includes(query) || (t.contentHtml||'').toLowerCase().includes(query)
   ).slice(0,6).map(t => ({ topic:t }));
-  return { tasks, topics };
+  return { topics };
 }
 
 function renderTopbar(){
   const results = globalSearchResults(searchQuery);
-  const titleMap = { dashboard:'Inicio', planner:'Reuniones', tasks:'Tareas', topics:'Proyectos', painpoints:'Puntos de dolor relevados', settings:'Configuración' };
+  const titleMap = { dashboard:'Inicio', planner:'Reuniones', topics:'Proyectos', painpoints:'Puntos de dolor relevados', settings:'Configuración' };
   return `
   <div class="topbar">
     <div class="search-wrap">
       <span class="search-icon">${ICN.search}</span>
-      <input class="search-input" id="globalSearch" placeholder="Buscar tareas, proyectos…" value="${escapeHtml(searchQuery)}" autocomplete="off">
+      <input class="search-input" id="globalSearch" placeholder="Buscar proyectos…" value="${escapeHtml(searchQuery)}" autocomplete="off">
       ${searchQuery ? '' : '<span class="search-kbd">/</span>'}
       ${results ? renderSearchDropdown(results) : ''}
     </div>
@@ -867,19 +836,10 @@ function renderTopbar(){
   </div>`;
 }
 function renderSearchDropdown(results){
-  const total = results.tasks.length + results.topics.length;
-  if(total === 0){
+  if(results.topics.length === 0){
     return `<div class="search-dropdown"><div class="sd-empty">Sin resultados para “${escapeHtml(searchQuery)}”</div></div>`;
   }
-  let html = '<div class="search-dropdown">';
-  if(results.tasks.length){
-    html += `<div class="sd-group"><div class="sd-label">Tareas</div>${results.tasks.map(t=>`<div class="sd-item" data-open-task="${t.id}">${icon('tasks')}<span>${escapeHtml(t.title)}</span></div>`).join('')}</div>`;
-  }
-  if(results.topics.length){
-    html += `<div class="sd-group"><div class="sd-label">Proyectos</div>${results.topics.map(r=>`<div class="sd-item" data-open-topic="${r.topic.id}">${icon('topics')}<span>${escapeHtml(r.topic.title)}</span></div>`).join('')}</div>`;
-  }
-  html += '</div>';
-  return html;
+  return `<div class="search-dropdown"><div class="sd-group"><div class="sd-label">Proyectos</div>${results.topics.map(r=>`<div class="sd-item" data-open-topic="${r.topic.id}">${icon('topics')}<span>${escapeHtml(r.topic.title)}</span></div>`).join('')}</div></div>`;
 }
 
 /* ===================== DASHBOARD ===================== */
@@ -887,13 +847,12 @@ function renderDashboard(){
   const today = todayISO();
   const wk = startOfWeek(new Date());
   const recentTopics = [...STATE.topics].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,5);
-  const pendingCount = STATE.tasks.filter(t=>t.status!=='Hecha').length;
-  const weekTasks = STATE.tasks.filter(t => t.date >= toISO(wk) && t.date <= toISO(addDays(wk,6)));
-  const doneThisWeek = weekTasks.filter(t => t.status==='Hecha').length;
+  const openPainPoints = STATE.painPoints.filter(p=>(p.status||'Pendiente')!=='Hecha').length;
+  const meetingsThisWeek = Array.from({length:7}).reduce((sum,_,i)=>sum+eventsOnDate(toISO(addDays(wk,i))).length, 0);
 
   const kpis = [
-    { num: pendingCount, label:'Tareas pendientes' },
-    { num: doneThisWeek, label:'Completadas esta semana' },
+    { num: openPainPoints, label:'Puntos de dolor abiertos' },
+    { num: meetingsThisWeek, label:'Reuniones esta semana' },
   ];
 
   return `
@@ -913,7 +872,7 @@ function renderDashboard(){
       <div class="panel">
         <div class="panel-head"><div class="panel-title">${icon('sparkle')}Accesos rápidos</div></div>
         <div class="quick-actions">
-          <div class="qa-btn" data-quick="task">${icon('plus')}Nueva tarea</div>
+          <div class="qa-btn" data-quick="painpoint">${icon('activity')}Punto de dolor</div>
           <div class="qa-btn" data-quick="topic">${icon('topics')}Nuevo proyecto</div>
           <div class="qa-btn" data-quick="reminder">${icon('bell')}Recordatorio</div>
         </div>
@@ -936,18 +895,6 @@ function renderDashboard(){
 }
 function emptyMini(title, sub){
   return `<div class="empty-state" style="padding:24px 10px;"><div class="et">${title}</div><div class="es">${sub}</div></div>`;
-}
-function taskRowMini(t, showDate){
-  const p = PRIORITIES[t.priority];
-  const isDone = t.status === 'Hecha';
-  const editable = canEdit(t);
-  return `
-  <div class="row-item" data-open-task="${t.id}">
-    <div class="row-check ${isDone?'done':''}" ${editable?`data-toggle-task="${t.id}"`:''}>${icon('check')}</div>
-    <span class="row-title ${isDone?'strike':''}">${escapeHtml(t.title)}</span>
-    <span class="pill ${p.cls}"><span class="pill-dot"></span>${p.label}</span>
-    ${showDate ? `<span class="row-meta">${fmtDateShort(t.date)}${t.time?' · '+t.time:''}</span>` : (t.time?`<span class="row-meta">${t.time}</span>`:'')}
-  </div>`;
 }
 
 /* ===================== PLANNER SEMANAL ===================== */
@@ -1169,97 +1116,6 @@ function openMeetingSummaryModal(id){
   document.getElementById('msTitle').focus();
 }
 
-/* ===================== TAREAS ===================== */
-function filteredTasks(){
-  return STATE.tasks.filter(t => {
-    if(taskFilters.tab === 'active' && t.status === 'Hecha') return false;
-    if(taskFilters.tab === 'done' && t.status !== 'Hecha') return false;
-    if(taskFilters.tab === 'active' && taskFilters.status !== 'all' && t.status !== taskFilters.status) return false;
-    if(taskFilters.priority !== 'all' && t.priority !== taskFilters.priority) return false;
-    if(taskFilters.assignee !== 'all' && t.assignee !== taskFilters.assignee) return false;
-    return true;
-  });
-}
-function renderTasks(){
-  const activeCount = STATE.tasks.filter(t=>t.status!=='Hecha').length;
-  const doneCount = STATE.tasks.filter(t=>t.status==='Hecha').length;
-  const PRIO_RANK = { alta:0, media:1, baja:2 };
-  const list = filteredTasks().sort((a,b) => {
-    const r = PRIO_RANK[a.priority] - PRIO_RANK[b.priority];
-    if(r !== 0) return r;
-    return (a.date+((a.time)||'99:99')).localeCompare(b.date+(b.time||'99:99'));
-  });
-  const body = taskFilters.view === 'board' ? renderTaskBoard(list) : renderTaskListView(list);
-  const statusOptions = taskFilters.tab === 'done' ? [] : STATUSES.filter(s=>s!=='Hecha');
-  return `
-  <div class="view-header">
-    <div>
-      <div class="view-title">Tareas</div>
-      <div class="view-sub">${list.length} tarea${list.length!==1?'s':''}</div>
-    </div>
-    <button class="btn-primary" id="taskAddBtn">${icon('plus')}<span>Nueva tarea</span></button>
-  </div>
-  <div class="seg" style="margin-bottom:14px;width:fit-content;">
-    <button class="seg-btn ${taskFilters.tab==='active'?'active':''}" data-task-tab="active">Activas<span class="seg-count">${activeCount}</span></button>
-    <button class="seg-btn ${taskFilters.tab==='done'?'active':''}" data-task-tab="done">Completadas<span class="seg-count">${doneCount}</span></button>
-  </div>
-  <div class="tasks-toolbar">
-    <div class="seg">
-      <button class="seg-btn ${taskFilters.view==='list'?'active':''}" data-task-view="list">Lista</button>
-      <button class="seg-btn ${taskFilters.view==='board'?'active':''}" data-task-view="board">Tablero</button>
-    </div>
-    ${statusOptions.length ? `
-    <select class="select-pill" id="filterStatus">
-      <option value="all">Todos los estados</option>
-      ${statusOptions.map(s=>`<option value="${s}" ${taskFilters.status===s?'selected':''}>${s}</option>`).join('')}
-    </select>` : ''}
-    <select class="select-pill" id="filterPriority">
-      <option value="all">Toda prioridad</option>
-      ${Object.entries(PRIORITIES).map(([k,v])=>`<option value="${k}" ${taskFilters.priority===k?'selected':''}>${v.label}</option>`).join('')}
-    </select>
-    <select class="select-pill" id="filterAssignee">
-      <option value="all">Todos</option>
-      ${Object.keys(USERS).map(k=>`<option value="${k}" ${taskFilters.assignee===k?'selected':''}>${USERS[k].name}</option>`).join('')}
-    </select>
-  </div>
-  ${body}`;
-}
-function renderTaskListView(list){
-  if(!list.length) return emptyBig('tasks','Sin tareas','Creá una tarea nueva o ajustá los filtros.');
-  return `<div class="task-list">${list.map(t => {
-    const p = PRIORITIES[t.priority]; const isDone = t.status==='Hecha'; const editable = canEdit(t);
-    return `
-    <div class="task-row" data-open-task="${t.id}">
-      <div class="row-check ${isDone?'done':''}" ${editable?`data-toggle-task="${t.id}"`:''}>${icon('check')}</div>
-      <div style="flex:1;min-width:0">
-        <div class="tr-title ${isDone?'row-title strike':''}">${escapeHtml(t.title)}</div>
-        ${t.desc ? descBullets(t.desc) : ''}
-        <div class="tr-tags">
-          ${t.tags.map(tg=>`<span class="tag">${escapeHtml(tg)}</span>`).join('')}
-        </div>
-      </div>
-      <span class="pill ${p.cls}"><span class="pill-dot"></span>${p.label}</span>
-      <span class="tag">${t.status}</span>
-      ${userChip(t.assignee,24)}
-      <span class="row-meta" style="min-width:70px;text-align:right">${fmtDateShort(t.date)}</span>
-    </div>`;
-  }).join('')}</div>`;
-}
-function renderTaskBoard(list){
-  return `<div class="board-cols">${STATUSES.map(status => {
-    const items = list.filter(t=>t.status===status);
-    return `<div class="board-col">
-      <div class="board-col-head"><span>${status}</span><span>${items.length}</span></div>
-      ${items.map(t=>{
-        const p = PRIORITIES[t.priority];
-        return `<div class="board-card" data-open-task="${t.id}">
-          <div class="tc-title">${escapeHtml(t.title)}</div>
-          <div class="tc-meta"><span class="pill ${p.cls}"><span class="pill-dot"></span>${p.label}</span>${userChip(t.assignee,17)}<span class="row-meta">${fmtDateShort(t.date)}</span></div>
-        </div>`;
-      }).join('') || `<div style="text-align:center;color:var(--text-faint);font-size:12px;padding:14px 0;">Vacío</div>`}
-    </div>`;
-  }).join('')}</div>`;
-}
 function emptyBig(ic, title, sub){
   return `<div class="empty-state" style="padding:70px 20px;">${icon(ic)}<div class="et">${title}</div><div class="es">${sub}</div></div>`;
 }
@@ -1509,10 +1365,6 @@ function renderSettings(){
         <button class="btn-secondary" id="resetDataBtn" style="color:var(--accent);border-color:var(--accent-soft-2)">${icon('trash')}<span>Vaciar todo el espacio de trabajo</span></button>
       </div>
     </div>
-    <div class="settings-card">
-      <h3>Calendario de Outlook</h3>
-      <button class="btn-secondary" id="exportIcsBtn">${icon('calendar')}<span>Exportar tareas a Outlook (.ics)</span></button>
-    </div>
     ${HAS_FIREBASE ? `
     <div class="settings-card">
       <h3>Sincronización</h3>
@@ -1541,76 +1393,6 @@ function openModal(html){
 }
 function closeModal(){
   if(activeModal){ activeModal.remove(); activeModal = null; }
-}
-
-function taskModalHtml(task){
-  const isNew = !task;
-  const t = task || { id:null, title:'', desc:'', assignee:PREFS.user, date: todayISO(), time:'', priority:'media', status:'Pendiente', tags:[], checklist:[], comments:[], files:[] };
-  return `
-  <div class="modal" id="taskModal">
-    <div class="modal-header">
-      <div class="modal-title">${isNew?'Nueva tarea':'Detalle de tarea'}</div>
-      <button class="icon-btn" data-close-modal>${icon('x')}</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="mDate" value="${t.date}">
-      <div class="field"><label>Título</label><input type="text" id="mTitle" value="${escapeHtml(t.title)}" placeholder="¿Qué hay que hacer?"></div>
-      <div class="field"><label>Notas</label><textarea id="mDesc" placeholder="Un punto por línea — se desglosa solo…">${escapeHtml(t.desc||'')}</textarea></div>
-      <div class="field">
-        <label>Seguimiento</label>
-        <div class="checklist-mini" id="mChecklistWrap">
-          ${t.checklist.map((c,i)=>`<div class="cl-row"><div class="cl-check ${c.done?'done':''}" data-cl-toggle="${i}">${icon('check')}</div><span class="cl-text ${c.done?'done':''}">${escapeHtml(c.text)}</span><span class="tag-x" data-cl-del="${i}" style="margin-left:auto">${ICN.x}</span></div>`).join('')}
-        </div>
-        <div class="cl-input-row"><input type="text" id="mChecklistInput" placeholder="Agregar ítem y Enter"><button class="btn-ghost" id="mChecklistAddBtn">Agregar</button></div>
-      </div>
-      <div class="field"><label>Prioridad</label><select id="mPriority">${Object.entries(PRIORITIES).map(([k,v])=>`<option value="${k}" ${t.priority===k?'selected':''}>${v.label}</option>`).join('')}</select></div>
-      <div class="field"><label>Estado</label><select id="mStatus">${STATUSES.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
-    </div>
-    <div class="modal-footer">
-      ${!isNew ? `<button class="btn-ghost" id="mDeleteBtn" style="color:var(--accent);margin-right:auto">Eliminar tarea</button>` : ''}
-      <button class="btn-secondary" data-close-modal>Cancelar</button>
-      <button class="btn-primary" id="mSaveBtn">${icon('check')}<span>${isNew?'Crear tarea':'Guardar cambios'}</span></button>
-    </div>
-  </div>`;
-}
-
-function openTaskModal(taskId){
-  const task = taskId ? STATE.tasks.find(t=>t.id===taskId) : null;
-  const wrap = openModal(taskModalHtml(task));
-  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModal));
-
-  let workingChecklist = task ? task.checklist.map(c=>({...c})) : [];
-  const refreshChecklist = () => { const box = document.getElementById('mChecklistWrap'); box.innerHTML = workingChecklist.map((c,i)=>`<div class="cl-row"><div class="cl-check ${c.done?'done':''}" data-cl-toggle="${i}">${icon('check')}</div><span class="cl-text ${c.done?'done':''}">${escapeHtml(c.text)}</span><span class="tag-x" data-cl-del="${i}" style="margin-left:auto">${ICN.x}</span></div>`).join(''); };
-
-  wrap.addEventListener('click', (e) => {
-    const clToggle = e.target.closest('[data-cl-toggle]'); if(clToggle){ const i=+clToggle.dataset.clToggle; workingChecklist[i].done=!workingChecklist[i].done; refreshChecklist(); }
-    const clDel = e.target.closest('[data-cl-del]'); if(clDel){ workingChecklist.splice(+clDel.dataset.clDel,1); refreshChecklist(); }
-    if(e.target.closest('#mChecklistAddBtn')){ const inp=document.getElementById('mChecklistInput'); if(inp.value.trim()){ workingChecklist.push({id:uid(),text:inp.value.trim(),done:false}); inp.value=''; refreshChecklist(); } }
-    if(e.target.closest('#mDeleteBtn') && task){
-      STATE.tasks = STATE.tasks.filter(x=>x.id!==task.id);
-      logActivity('task', `eliminó "${task.title}"`); saveData(); closeModal(); renderApp(); toast('Tarea eliminada','trash');
-    }
-    if(e.target.closest('#mSaveBtn')){
-      const title = document.getElementById('mTitle').value.trim();
-      if(!title){ toast('Ponele un título a la tarea'); return; }
-      const data = {
-        title, desc: document.getElementById('mDesc').value,
-        priority: document.getElementById('mPriority').value,
-        status: document.getElementById('mStatus').value,
-        checklist: workingChecklist,
-      };
-      if(task){ Object.assign(task, data); touch(task); logActivity('task', `editó "${task.title}"`); }
-      else {
-        const now = Date.now();
-        const date = document.getElementById('mDate').value || todayISO();
-        STATE.tasks.push({ id: uid(), ...data, assignee:PREFS.user, date, time:'', tags:[], files:[], comments:[], createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
-        logActivity('task', `creó "${title}"`);
-      }
-      saveData(); closeModal(); renderApp(); toast(task?'Tarea actualizada':'Tarea creada','check');
-    }
-  });
-  document.getElementById('mChecklistInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('mChecklistAddBtn').click(); } });
-  document.getElementById('mTitle').focus();
 }
 
 function topicModalHtml(){
@@ -1662,7 +1444,6 @@ function viewHtml(){
   switch(currentView){
     case 'dashboard': return renderDashboard();
     case 'planner': return renderPlanner();
-    case 'tasks': return renderTasks();
     case 'topics': return renderTopics();
     case 'painpoints': return renderPainPoints();
     case 'settings': return renderSettings();
@@ -1697,21 +1478,10 @@ function bindGlobalEvents(){
     search.addEventListener('click', e=>e.stopPropagation());
   }
 
-  document.querySelectorAll('[data-open-task]').forEach(el => el.addEventListener('click', (e) => {
-    if(e.target.closest('[data-toggle-task]')) return;
-    openTaskModal(el.dataset.openTask);
-  }));
-  document.querySelectorAll('[data-toggle-task]').forEach(el => el.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const t = STATE.tasks.find(x=>x.id===el.dataset.toggleTask);
-    if(t && canEdit(t)){ t.status = t.status==='Hecha' ? 'Pendiente' : 'Hecha'; touch(t); logActivity('task', `marcó "${t.title}" como ${t.status.toLowerCase()}`); saveData(); renderApp(); }
-  }));
   document.querySelectorAll('[data-open-topic]').forEach(el => el.addEventListener('click', () => {
     topicsActiveId = el.dataset.openTopic;
     currentView='topics'; searchQuery=''; renderApp();
   }));
-
-  document.querySelectorAll('[data-goto-day]').forEach(el => el.addEventListener('click', () => openDayModal(el.dataset.gotoDay)));
 
   const userSwitchBtn = document.getElementById('userSwitchBtn');
   if(userSwitchBtn) userSwitchBtn.addEventListener('click', (e) => {
@@ -1745,7 +1515,7 @@ function bindGlobalEvents(){
     pop.className = 'menu-pop'; pop.id = 'quickMenuPop';
     pop.style.top = (rect.bottom + 8) + 'px'; pop.style.right = (window.innerWidth - rect.right) + 'px';
     pop.innerHTML = `
-      <div class="menu-item" data-quick="task">${icon('tasks')}<span>Nueva tarea</span></div>
+      <div class="menu-item" data-quick="painpoint">${icon('activity')}<span>Punto de dolor</span></div>
       <div class="menu-item" data-quick="topic">${icon('topics')}<span>Nuevo proyecto</span></div>
       <div class="menu-item" data-quick="reminder">${icon('bell')}<span>Recordatorio</span></div>`;
     document.body.appendChild(pop);
@@ -1759,13 +1529,10 @@ function bindGlobalEvents(){
     const r = STATE.reminders.find(x=>x.id===el.dataset.toggleReminder);
     if(r){ r.done = !r.done; saveData(); renderApp(); }
   }));
-
-  // search dropdown result clicks
-  document.querySelectorAll('[data-open-task],[data-open-topic]').forEach(()=>{}); // already bound above broadly
 }
 
 function handleQuickAction(kind){
-  if(kind==='task') openTaskModal(null);
+  if(kind==='painpoint') openPainPointModal();
   else if(kind==='topic') openTopicModal();
   else if(kind==='reminder'){
     promptModal('Nuevo recordatorio', 'Ej. Llamar a Apex Group', (val) => {
@@ -1816,7 +1583,6 @@ function openRemindersPanel(){
 /* ---------- Bind: eventos específicos de cada vista ---------- */
 function bindViewEvents(){
   if(currentView === 'planner') bindPlannerEvents();
-  if(currentView === 'tasks') bindTasksEvents();
   if(currentView === 'topics') bindTopicsEvents();
   if(currentView === 'painpoints') bindPainPointsEvents();
   if(currentView === 'settings') bindSettingsEvents();
@@ -1836,33 +1602,6 @@ function bindPlannerEvents(){
   document.querySelectorAll('[data-cal-day]').forEach(el => el.addEventListener('click', () => openCalendarDayModal(el.dataset.calDay)));
 }
 
-function openDayModal(iso){
-  const dayTasks = STATE.tasks.filter(t=>t.date===iso);
-  const wrap = openModal(`
-    <div class="modal" style="width:460px">
-      <div class="modal-header"><div class="modal-title" style="text-transform:capitalize">${fmtDateLong(iso)}</div><button class="icon-btn" data-close-modal>${icon('x')}</button></div>
-      <div class="modal-body">
-        ${dayTasks.length ? `<div class="task-list">${dayTasks.map(t=>taskRowMini(t,false)).join('')}</div>` : emptyMini('Sin tareas','Agregá una para este día.')}
-      </div>
-      <div class="modal-footer"><button class="btn-primary" id="dayAddTaskBtn">${icon('plus')}<span>Agregar tarea</span></button></div>
-    </div>`);
-  wrap.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', () => { closeModal(); renderApp(); }));
-  wrap.querySelectorAll('[data-open-task]').forEach(el => el.addEventListener('click', (e)=>{ if(e.target.closest('[data-toggle-task]')) return; closeModal(); openTaskModal(el.dataset.openTask); }));
-  wrap.querySelectorAll('[data-toggle-task]').forEach(el => el.addEventListener('click', (e)=>{ e.stopPropagation(); const t=STATE.tasks.find(x=>x.id===el.dataset.toggleTask); if(t && canEdit(t)){ t.status = t.status==='Hecha'?'Pendiente':'Hecha'; touch(t); saveData(); } closeModal(); openDayModal(iso); }));
-  document.getElementById('dayAddTaskBtn').addEventListener('click', () => {
-    closeModal(); openTaskModal(null);
-    setTimeout(()=>{ const d = document.getElementById('mDate'); if(d) d.value = iso; }, 0);
-  });
-}
-
-function bindTasksEvents(){
-  const addBtn = document.getElementById('taskAddBtn'); if(addBtn) addBtn.addEventListener('click', () => openTaskModal(null));
-  document.querySelectorAll('[data-task-tab]').forEach(el => el.addEventListener('click', () => { taskFilters.tab = el.dataset.taskTab; taskFilters.status = 'all'; renderApp(); }));
-  document.querySelectorAll('[data-task-view]').forEach(el => el.addEventListener('click', () => { taskFilters.view = el.dataset.taskView; renderApp(); }));
-  const fs = document.getElementById('filterStatus'); if(fs) fs.addEventListener('change', () => { taskFilters.status = fs.value; renderApp(); });
-  const fp = document.getElementById('filterPriority'); if(fp) fp.addEventListener('change', () => { taskFilters.priority = fp.value; renderApp(); });
-  const fa = document.getElementById('filterAssignee'); if(fa) fa.addEventListener('change', () => { taskFilters.assignee = fa.value; renderApp(); });
-}
 
 function bindTopicsEvents(){
   const addBtn = document.getElementById('topicAddBtn'); if(addBtn) addBtn.addEventListener('click', openTopicModal);
@@ -1949,8 +1688,6 @@ function bindSettingsEvents(){
       saveData(); renderApp(); toast('Espacio de trabajo vaciado','check');
     }
   });
-  const icsBtn = document.getElementById('exportIcsBtn');
-  if(icsBtn) icsBtn.addEventListener('click', exportIcs);
   const syncBtn = document.getElementById('syncFirebaseBtn');
   if(syncBtn) syncBtn.addEventListener('click', async () => {
     syncBtn.disabled = true;
@@ -1962,54 +1699,6 @@ function bindSettingsEvents(){
     }
     syncBtn.disabled = false;
   });
-}
-
-/* ---------- Exportación a Outlook (.ics) ---------- */
-function icsEscape(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n'); }
-function icsDate(dateStr, timeStr){
-  const [y,m,d] = dateStr.split('-');
-  if(timeStr){
-    const [hh,mm] = timeStr.split(':');
-    return `${y}${m}${d}T${hh}${mm}00`;
-  }
-  return `${y}${m}${d}`;
-}
-function exportIcs(){
-  const withDate = STATE.tasks.filter(t => t.date);
-  if(!withDate.length){ toast('No hay tareas con fecha para exportar'); return; }
-  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Neix//Workspace//ES','CALSCALE:GREGORIAN'];
-  withDate.forEach(t => {
-    const uidStr = `${t.id}@planner-neix`;
-    const stamp = new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
-    lines.push('BEGIN:VEVENT');
-    lines.push(`UID:${uidStr}`);
-    lines.push(`DTSTAMP:${stamp}`);
-    if(t.time){
-      lines.push(`DTSTART:${icsDate(t.date, t.time)}`);
-      const [hh,mm] = t.time.split(':').map(Number);
-      const endMinutes = hh*60+mm+30;
-      const endH = String(Math.floor(endMinutes/60)%24).padStart(2,'0');
-      const endM = String(endMinutes%60).padStart(2,'0');
-      lines.push(`DTEND:${icsDate(t.date, `${endH}:${endM}`)}`);
-    } else {
-      lines.push(`DTSTART;VALUE=DATE:${icsDate(t.date)}`);
-    }
-    lines.push(`SUMMARY:${icsEscape(t.title)}`);
-    const descParts = [];
-    if(t.desc) descParts.push(t.desc);
-    descParts.push(`Responsable: ${USERS[t.assignee]?.name||t.assignee}`);
-    descParts.push(`Prioridad: ${PRIORITIES[t.priority]?.label||t.priority}`);
-    descParts.push(`Estado: ${t.status}`);
-    lines.push(`DESCRIPTION:${icsEscape(descParts.join(' · '))}`);
-    lines.push(`STATUS:${t.status==='Hecha'?'COMPLETED':'CONFIRMED'}`);
-    lines.push('END:VEVENT');
-  });
-  lines.push('END:VCALENDAR');
-  const blob = new Blob([lines.join('\r\n')], { type:'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'planner-tareas.ics'; a.click();
-  URL.revokeObjectURL(url);
-  toast('Archivo .ics exportado — importalo en Outlook','check');
 }
 
 /* ===================== INIT ===================== */
@@ -2127,7 +1816,7 @@ function startFirebaseSync(){
 
 async function initApp(){
   await loadData();
-  if(!STATE || !STATE.tasks) STATE = defaultData();
+  if(!STATE || !STATE.topics) STATE = defaultData();
   migrateMeetingSummaries();
   migratePainPoints();
   if(!STATE.calendarEvents) STATE.calendarEvents = [];
