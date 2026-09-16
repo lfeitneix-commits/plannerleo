@@ -1228,7 +1228,7 @@ function renderPainPoints(){
             </div>
             <span class="pill ${prio.cls}"><span class="pill-dot"></span>${prio.label}</span>
             <span class="tag" style="background:${statusStyle.bg};color:${statusStyle.color};border-color:transparent;">${p.status||'Pendiente'}</span>
-            <span class="row-meta" style="white-space:nowrap;">${USERS[p.createdBy]?.name||''} · ${timeAgo(p.createdAt)}</span>
+            <span class="row-meta" style="white-space:nowrap;">${USERS[p.updatedBy||p.createdBy]?.name||''} · ${timeAgo(p.updatedAt||p.createdAt)}</span>
           </div>`;
         }).join('')}
       </div>
@@ -1297,6 +1297,7 @@ function openPainPointModal(id){
     if(inp.value.trim()){
       p.comments = p.comments || [];
       p.comments.push({ id:uid(), author:PREFS.user, text:inp.value.trim(), date:Date.now() });
+      p.updatedBy = PREFS.user; p.updatedAt = Date.now();
       saveData(); closeModal(); openPainPointModal(p.id);
     }
   });
@@ -1304,6 +1305,7 @@ function openPainPointModal(id){
   if(commentInput) commentInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); document.getElementById('ppCommentBtn').click(); } });
   wrap.querySelectorAll('[data-del-comment]').forEach(el => el.addEventListener('click', () => {
     p.comments = (p.comments||[]).filter(c=>c.id!==el.dataset.delComment);
+    p.updatedBy = PREFS.user; p.updatedAt = Date.now();
     saveData(); closeModal(); openPainPointModal(p.id);
   }));
   document.getElementById('ppSaveBtn').addEventListener('click', () => {
