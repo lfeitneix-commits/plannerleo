@@ -655,6 +655,7 @@ let STATE = null;
 let PREFS = null;
 let currentView = 'dashboard';
 let topicsActiveId = null;
+let painPointFilter = 'all';
 let calendarWeekStart = toISO(startOfWeek(new Date()));
 let searchQuery = '';
 let saveTimer = null;
@@ -1138,11 +1139,13 @@ function renderTopics(){
   <div class="topics-grid">
     ${STATE.topics.map(t => {
       const preview = stripHtml(t.contentHtml);
+      const overdue = t.dueDate && t.dueDate < todayISO();
       return `
       <div class="topic-card" data-open-topic="${t.id}">
         <div class="topic-bar" style="background:${t.color}"></div>
         <div class="topic-name">${escapeHtml(t.title)}</div>
         <div class="topic-sub">${preview ? escapeHtml(preview.slice(0,80)) : 'Sin descripción todavía'}</div>
+        ${t.dueDate ? `<div class="row-meta" style="margin-top:8px;display:flex;align-items:center;gap:4px;${overdue?'color:var(--accent);':''}">${icon('clock')}Vence ${fmtDateShort(t.dueDate)}</div>` : ''}
         <div class="topic-foot">
           ${userChip(t.updatedBy,20)}
           <span class="row-meta">${timeAgo(t.updatedAt)}</span>
@@ -1156,6 +1159,7 @@ function renderTopics(){
 }
 function renderTopicDetail(topic){
   const editable = canEdit(topic);
+  const overdue = topic.dueDate && topic.dueDate < todayISO();
   return `
   <div class="view-header">
     <div>
@@ -1164,6 +1168,10 @@ function renderTopicDetail(topic){
       <div class="view-sub">Creado por ${USERS[topic.createdBy]?.name} · editado ${timeAgo(topic.updatedAt)}</div>
     </div>
     ${editable ? `<button class="btn-secondary" id="topicDeleteBtn" style="color:var(--accent);border-color:var(--accent-soft-2)">${icon('trash')}<span>Eliminar proyecto</span></button>` : ''}
+  </div>
+  <div class="field" style="max-width:200px;">
+    <label>Plazo${overdue?` <span style="color:var(--accent);">(vencido)</span>`:''}</label>
+    ${editable ? `<input type="date" id="topicDueDate" value="${topic.dueDate||''}">` : `<div style="padding:9px 0;">${topic.dueDate?fmtDateShort(topic.dueDate):'Sin plazo'}</div>`}
   </div>
   <div class="sub-section">
     <div class="sub-section-head"><div class="sub-section-title">Descripción</div></div>
@@ -1188,9 +1196,22 @@ function renderTopicDetail(topic){
 function renderPainPoints(){
   const areasById = {};
   STATE.painAreas.forEach(a => areasById[a.id] = a);
+  const allCount = STATE.painPoints.length;
+  const doneCount = STATE.painPoints.filter(p=>(p.status||'Pendiente')==='Hecha').length;
+  const pendingCount = allCount - doneCount;
+  const visiblePoints = STATE.painPoints.filter(p => {
+    if(painPointFilter==='pending') return (p.status||'Pendiente')!=='Hecha';
+    if(painPointFilter==='done') return (p.status||'Pendiente')==='Hecha';
+    return true;
+  });
   const byArea = {};
-  STATE.painPoints.forEach(p => { if(areasById[p.areaId]) (byArea[p.areaId] = byArea[p.areaId]||[]).push(p); });
+  visiblePoints.forEach(p => { if(areasById[p.areaId]) (byArea[p.areaId] = byArea[p.areaId]||[]).push(p); });
   const areaIds = Object.keys(byArea).sort((a,b)=>areasById[a].name.localeCompare(areasById[b].name));
+  const tabs = [
+    { key:'all', label:'Todos', count:allCount },
+    { key:'pending', label:'Pendientes', count:pendingCount },
+    { key:'done', label:'Hechos', count:doneCount },
+  ];
   return `
   <div class="view-header">
     <div>
@@ -1198,6 +1219,9 @@ function renderPainPoints(){
       <div class="view-sub">Relevamiento de problemas, agrupados por área</div>
     </div>
     <button class="btn-primary" id="addPainPointBtn">${icon('plus')}<span>Agregar punto de dolor</span></button>
+  </div>
+  <div class="subtopic-tabs">
+    ${tabs.map(t=>`<div class="subtab ${painPointFilter===t.key?'active':''}" data-pp-filter="${t.key}">${t.label} <span style="color:var(--text-faint);font-family:'DM Mono',monospace;font-size:11px;">${t.count}</span></div>`).join('')}
   </div>
   ${areaIds.length ? areaIds.map(areaId => {
     const PRIO_RANK = { alta:0, media:1, baja:2 };
@@ -1233,7 +1257,9 @@ function renderPainPoints(){
         }).join('')}
       </div>
     </div>`;
-  }).join('') : emptyBig('activity','Todavía no hay puntos de dolor relevados','Tocá "Agregar punto de dolor" y sumá el primero por área.')}`;
+  }).join('') : emptyBig('activity',
+      painPointFilter==='all' ? 'Todavía no hay puntos de dolor relevados' : painPointFilter==='pending' ? 'No hay puntos de dolor pendientes' : 'No hay puntos de dolor hechos',
+      painPointFilter==='all' ? 'Tocá "Agregar punto de dolor" y sumá el primero por área.' : 'Probá con otro filtro.')}`;
 }
 function painPointModalHtml(p){
   const isNew = !p;
@@ -1331,6 +1357,7 @@ function bindPainPointsEvents(){
   const addBtn = document.getElementById('addPainPointBtn');
   if(addBtn) addBtn.addEventListener('click', () => openPainPointModal());
   document.querySelectorAll('[data-open-painpoint]').forEach(el => el.addEventListener('click', () => openPainPointModal(el.dataset.openPainpoint)));
+  document.querySelectorAll('[data-pp-filter]').forEach(el => el.addEventListener('click', () => { painPointFilter = el.dataset.ppFilter; renderApp(); }));
 }
 
 /* ===================== CONFIGURACIÓN ===================== */
@@ -1403,6 +1430,7 @@ function topicModalHtml(){
     <div class="modal-header"><div class="modal-title">Nuevo proyecto</div><button class="icon-btn" data-close-modal>${icon('x')}</button></div>
     <div class="modal-body">
       <div class="field"><label>Nombre del proyecto</label><input type="text" id="ntTitle" placeholder="Ej. Fondos Comunes"></div>
+      <div class="field"><label>Plazo (opcional)</label><input type="date" id="ntDueDate"></div>
       <div class="field"><label>Color</label><div style="display:flex;gap:8px;">${TOPIC_COLORS.map((c,i)=>`<div data-topic-color="${c}" style="width:28px;height:28px;border-radius:9px;background:${c};cursor:pointer;border:2px solid ${i===0?'var(--text)':'transparent'}"></div>`).join('')}</div></div>
     </div>
     <div class="modal-footer"><button class="btn-secondary" data-close-modal>Cancelar</button><button class="btn-primary" id="ntSaveBtn">${icon('check')}<span>Crear proyecto</span></button></div>
@@ -1417,8 +1445,9 @@ function openTopicModal(){
     if(e.target.closest('#ntSaveBtn')){
       const title = document.getElementById('ntTitle').value.trim();
       if(!title){ toast('Ponele un nombre al proyecto'); return; }
+      const dueDate = document.getElementById('ntDueDate').value;
       const now = Date.now();
-      STATE.topics.push({ id:uid(), title, color:chosenColor, contentHtml:'<p></p>', createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
+      STATE.topics.push({ id:uid(), title, color:chosenColor, dueDate, contentHtml:'<p></p>', createdBy:PREFS.user, updatedBy:PREFS.user, createdAt:now, updatedAt:now });
       logActivity('topic', `creó el proyecto "${title}"`);
       saveData(); closeModal(); renderApp(); toast('Proyecto creado','check');
     }
@@ -1612,6 +1641,11 @@ function bindTopicsEvents(){
 
   const topic = STATE.topics.find(t=>t.id===topicsActiveId);
   if(!topic) return;
+
+  const dueDateInput = document.getElementById('topicDueDate');
+  if(dueDateInput) dueDateInput.addEventListener('change', () => {
+    topic.dueDate = dueDateInput.value; touch(topic); saveData(); renderApp();
+  });
 
   // Editor de descripción del proyecto
   const subContent = document.getElementById('subContent');
